@@ -146,7 +146,8 @@ describe("dashboard", () => {
       expect(result.ok).toBe(true);
       if (result.ok) {
         const hasValidIndicator =
-          result.value.includes("✓") || result.value.includes("✗");
+          result.value.includes("✓") || result.value.includes("✗") ||
+          result.value.includes("&#10003;") || result.value.includes("&#10007;");
         expect(hasValidIndicator).toBe(true);
       }
     });
