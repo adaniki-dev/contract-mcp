@@ -1,0 +1,182 @@
+export type Severity = "error" | "warning" | "info";
+export type ContractStatus = "draft" | "active" | "deprecated";
+
+// Result pattern
+export type Result<T, E> = { ok: true; value: T } | { ok: false; error: E };
+
+// Contract structure matching feature.schema.yaml
+export interface ContractMeta {
+  version: string;
+  feature: string;
+  description: string;
+  owner: string;
+  status: ContractStatus;
+}
+
+export interface InternalDep {
+  feature: string;
+  reason: string;
+}
+
+export interface ExternalDep {
+  package: string;
+  version: string;
+  reason: string;
+}
+
+export interface ContractDependencies {
+  internal: InternalDep[];
+  external: ExternalDep[];
+}
+
+export interface FunctionExport {
+  name: string;
+  signature: string;
+  description: string;
+  pure: boolean;
+}
+
+export interface TypeExport {
+  name: string;
+  description: string;
+}
+
+export interface ContractExports {
+  functions: FunctionExport[];
+  types: TypeExport[];
+}
+
+export interface Endpoint {
+  tool: string;
+  description: string;
+  input: string;
+  output: string;
+  errors: string[];
+}
+
+export interface TypeField {
+  name: string;
+  type: string;
+  required: boolean;
+  description: string;
+}
+
+export interface ContractType {
+  name: string;
+  description: string;
+  fields: TypeField[];
+}
+
+export interface Rule {
+  id: string;
+  description: string;
+  severity: Severity;
+  testable: boolean;
+}
+
+export interface ContractFile {
+  path: string;
+  purpose: string;
+}
+
+export interface Contract {
+  contract: ContractMeta;
+  dependencies: ContractDependencies;
+  exports: ContractExports;
+  endpoints?: Endpoint[];
+  types: ContractType[];
+  rules: Rule[];
+  files: ContractFile[];
+}
+
+// Compiler types
+export interface CompileResult {
+  contracts: Contract[];
+  diagnostics: Diagnostic[];
+}
+
+export interface CompileError {
+  path: string;
+  message: string;
+  severity: Severity;
+  line?: number;
+}
+
+export interface Diagnostic {
+  rule: string;
+  message: string;
+  severity: Severity;
+  path: string;
+}
+
+// Validator types
+export interface ValidationResult {
+  feature: string;
+  valid: boolean;
+  violations: Violation[];
+}
+
+export interface ValidationError {
+  feature: string;
+  message: string;
+}
+
+export interface Violation {
+  rule: string;
+  message: string;
+  severity: Severity;
+  file?: string;
+  line?: number;
+}
+
+// Indexer types
+export interface Index {
+  version: string;
+  project: string;
+  updatedAt: string;
+  contractsDir: string;
+  features: IndexEntry[];
+}
+
+export interface IndexEntry {
+  feature: string;
+  contractPath: string;
+  status: ContractStatus;
+  description: string;
+  dependsOn: string[];
+  exportsCount: number;
+  rulesCount: number;
+}
+
+export interface IndexError {
+  message: string;
+}
+
+export interface DriftReport {
+  orphanedContracts: string[];
+  missingContracts: string[];
+  outdatedEntries: string[];
+  hasDrift: boolean;
+}
+
+// Dashboard types
+export interface DashboardData {
+  project: string;
+  totalFeatures: number;
+  totalRules: number;
+  totalViolations: number;
+  features: FeatureSummary[];
+}
+
+export interface FeatureSummary {
+  feature: string;
+  status: ContractStatus;
+  valid: boolean;
+  violationsCount: number;
+  dependenciesCount: number;
+  rulesCount: number;
+}
+
+export interface DashboardError {
+  message: string;
+}
