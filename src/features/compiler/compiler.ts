@@ -6,7 +6,7 @@ import type {
   Diagnostic,
   Result,
 } from "@shared/types/contract.types";
-import { DEFAULT_CONTRACTS_DIR, CONTRACT_FILE_PATTERN } from "@shared/config";
+import { DEFAULT_CONTRACTS_DIR, CONTRACT_FILE_PATTERN, isIgnoredPath } from "@shared/config";
 import { join } from "path";
 
 export async function compileOne(
@@ -21,7 +21,7 @@ async function scanContracts(dir: string, recursive: boolean): Promise<string[]>
   const paths: string[] = [];
 
   for (const filePath of glob.scanSync({ cwd: dir, absolute: true })) {
-    if (filePath.includes("/_schema/") || filePath.includes("/node_modules/")) {
+    if (isIgnoredPath(filePath)) {
       continue;
     }
     paths.push(filePath);

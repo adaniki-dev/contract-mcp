@@ -12,7 +12,7 @@ import type {
   Result,
   Contract,
 } from "@shared/types/contract.types";
-import { DEFAULT_CONTRACTS_DIR } from "@shared/config";
+import { DEFAULT_CONTRACTS_DIR, isIgnoredPath } from "@shared/config";
 import { join } from "path";
 
 /**
@@ -71,7 +71,7 @@ function findBarrelPath(contract: Contract, projectRoot: string): string {
   for (const pattern of patterns) {
     const glob = new Bun.Glob(pattern);
     for (const match of glob.scanSync({ cwd: projectRoot, absolute: true })) {
-      if (!match.includes("/node_modules/")) {
+      if (!isIgnoredPath(match)) {
         return match;
       }
     }
