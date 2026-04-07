@@ -1,7 +1,7 @@
 contract:
-  version: "1.0.0"
+  version: "2.0.0"
   feature: dashboard
-  description: "Gera relatório humanizado do status dos contratos para desenvolvedores"
+  description: "Web dashboard que serve relatório humanizado dos contratos via localhost"
   owner: adam
   status: draft
 
@@ -17,13 +17,17 @@ dependencies:
 
 exports:
   functions:
+    - name: startDashboard
+      signature: "(projectRoot: string) => Promise<Result<{ url: string; port: number; stop: () => void }, DashboardError>>"
+      description: "Inicia web server com dashboard em porta disponível a partir de 8000"
+      pure: false
     - name: renderDashboard
-      signature: "(projectRoot: string) => Result<string, DashboardError>"
-      description: "Gera dashboard em texto formatado para terminal"
+      signature: "(projectRoot: string) => Promise<Result<string, DashboardError>>"
+      description: "Gera HTML do dashboard sem iniciar servidor"
       pure: true
     - name: renderHtml
-      signature: "(projectRoot: string) => Result<string, DashboardError>"
-      description: "Gera dashboard em HTML para visualização web (futuro)"
+      signature: "(projectRoot: string) => Promise<Result<string, DashboardError>>"
+      description: "Alias para renderDashboard"
       pure: true
   types:
     - name: DashboardData
@@ -94,8 +98,12 @@ rules:
     description: "Dashboard deve mostrar: feature, status, validação pass/fail, deps, rules"
     severity: warning
     testable: true
+  - id: auto-port
+    description: "Tenta portas a partir de 8000, fallback automático se ocupada"
+    severity: error
+    testable: true
   - id: human-readable
-    description: "Output deve ser legível por humanos sem ferramentas adicionais"
+    description: "Output deve ser legível por humanos via browser sem ferramentas adicionais"
     severity: info
     testable: false
 
@@ -103,6 +111,6 @@ files:
   - path: src/features/dashboard/index.ts
     purpose: "Barrel export público"
   - path: src/features/dashboard/dashboard.ts
-    purpose: "Lógica de renderização do dashboard"
+    purpose: "Web server + renderização HTML do dashboard"
   - path: src/features/dashboard/dashboard.test.ts
     purpose: "Testes do dashboard"

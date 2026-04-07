@@ -1,6 +1,6 @@
 version: 1.0.0
 project: zero-human
-updatedAt: 2026-04-07T19:48:52.427Z
+updatedAt: 2026-04-07T20:02:58.574Z
 contractsDir: /home/adan/workspace/zero-human/contracts
 features:
   - feature: dependency-graph
@@ -49,13 +49,13 @@ features:
   - feature: dashboard
     contractPath: dashboard.contract.yaml
     status: draft
-    description: Gera relatório humanizado do status dos contratos para desenvolvedores
+    description: Web dashboard que serve relatório humanizado dos contratos via localhost
     dependsOn:
       - compiler
       - validator
       - indexer
-    exportsCount: 5
-    rulesCount: 3
+    exportsCount: 6
+    rulesCount: 4
   - feature: indexer
     contractPath: indexer.contract.yaml
     status: draft

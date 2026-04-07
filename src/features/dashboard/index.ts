@@ -1,1 +1,1 @@
-export { renderDashboard, renderHtml } from "./dashboard";
+export { startDashboard, renderDashboard, renderHtml } from "./dashboard";

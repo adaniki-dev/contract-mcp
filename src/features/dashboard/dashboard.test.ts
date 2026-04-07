@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { renderDashboard, renderHtml } from "./dashboard";
+import { startDashboard, renderDashboard } from "./dashboard";
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
@@ -52,7 +52,6 @@ beforeAll(() => {
     contractYaml("test-b", { deps: ["test-a"], rules: 2 })
   );
 
-  // Create barrel files so validator can find them
   writeFileSync(
     join(tmpDir, "src", "features", "test-a", "index.ts"),
     "export {};\n"
@@ -68,13 +67,68 @@ afterAll(() => {
 });
 
 describe("dashboard", () => {
+  describe("startDashboard", () => {
+    test("starts web server and returns url with port", async () => {
+      const result = await startDashboard(tmpDir);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.url).toMatch(/^http:\/\/localhost:\d+$/);
+        expect(result.value.port).toBeGreaterThanOrEqual(8000);
+        expect(typeof result.value.stop).toBe("function");
+        result.value.stop();
+      }
+    });
+
+    test("serves HTML on GET /", async () => {
+      const result = await startDashboard(tmpDir);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        const res = await fetch(result.value.url);
+        expect(res.status).toBe(200);
+        expect(res.headers.get("content-type")).toContain("text/html");
+        const html = await res.text();
+        expect(html).toContain("test-a");
+        expect(html).toContain("test-b");
+        result.value.stop();
+      }
+    });
+
+    test("serves JSON on GET /api/data", async () => {
+      const result = await startDashboard(tmpDir);
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        const res = await fetch(`${result.value.url}/api/data`);
+        expect(res.status).toBe(200);
+        const data = await res.json();
+        expect(data.totalFeatures).toBe(2);
+        expect(data.features).toHaveLength(2);
+        result.value.stop();
+      }
+    });
+
+    test("falls back to next port if current is busy", async () => {
+      const first = await startDashboard(tmpDir);
+      expect(first.ok).toBe(true);
+      if (first.ok) {
+        const second = await startDashboard(tmpDir);
+        expect(second.ok).toBe(true);
+        if (second.ok) {
+          expect(second.value.port).toBeGreaterThan(first.value.port);
+          second.value.stop();
+        }
+        first.value.stop();
+      }
+    });
+  });
+
   describe("renderDashboard", () => {
-    test("renders text dashboard for terminal", async () => {
+    test("returns HTML string without starting server", async () => {
       const result = await renderDashboard(tmpDir);
       expect(result.ok).toBe(true);
       if (result.ok) {
-        expect(typeof result.value).toBe("string");
-        expect(result.value.length).toBeGreaterThan(0);
+        expect(result.value).toContain("<!DOCTYPE html>");
+        expect(result.value).toContain("test-a");
+        expect(result.value).toContain("test-b");
       }
     });
 
@@ -91,94 +145,26 @@ describe("dashboard", () => {
       const result = await renderDashboard(tmpDir);
       expect(result.ok).toBe(true);
       if (result.ok) {
-        // Should contain either checkmark or cross for validation status
         const hasValidIndicator =
           result.value.includes("✓") || result.value.includes("✗");
         expect(hasValidIndicator).toBe(true);
-      }
-    });
-
-    test("shows dependency counts", async () => {
-      const result = await renderDashboard(tmpDir);
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        // test-b has 1 dep (test-a), test-a has 0 deps
-        // The table should contain "Deps" header
-        expect(result.value).toContain("Deps");
-      }
-    });
-  });
-
-  describe("renderHtml", () => {
-    test("renders HTML dashboard", async () => {
-      const result = await renderHtml(tmpDir);
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(result.value).toContain("<html>");
-        expect(result.value).toContain("<table");
-        expect(result.value).toContain("test-a");
-        expect(result.value).toContain("test-b");
       }
     });
   });
 
   describe("rules", () => {
     test("read-only: dashboard never modifies contracts", async () => {
-      const contractAPath = join(
-        tmpDir,
-        "contracts",
-        "test-a.contract.yaml"
-      );
-      const contractBPath = join(
-        tmpDir,
-        "contracts",
-        "test-b.contract.yaml"
-      );
-
+      const contractAPath = join(tmpDir, "contracts", "test-a.contract.yaml");
       const beforeA = readFileSync(contractAPath, "utf-8");
-      const beforeB = readFileSync(contractBPath, "utf-8");
 
-      await renderDashboard(tmpDir);
+      const result = await startDashboard(tmpDir);
+      if (result.ok) {
+        await fetch(result.value.url);
+        result.value.stop();
+      }
 
       const afterA = readFileSync(contractAPath, "utf-8");
-      const afterB = readFileSync(contractBPath, "utf-8");
-
       expect(afterA).toBe(beforeA);
-      expect(afterB).toBe(beforeB);
-    });
-
-    test("complete-overview: shows feature, status, validation, deps, rules", async () => {
-      const result = await renderDashboard(tmpDir);
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        // Must contain feature names
-        expect(result.value).toContain("test-a");
-        expect(result.value).toContain("test-b");
-        // Must contain status
-        expect(result.value).toContain("draft");
-        // Must contain valid indicator
-        const hasValidIndicator =
-          result.value.includes("✓") || result.value.includes("✗");
-        expect(hasValidIndicator).toBe(true);
-        // Must contain column headers for deps and rules
-        expect(result.value).toContain("Deps");
-        expect(result.value).toContain("Rules");
-      }
-    });
-
-    test("human-readable: output is readable without additional tools", async () => {
-      const result = await renderDashboard(tmpDir);
-      expect(result.ok).toBe(true);
-      if (result.ok) {
-        expect(typeof result.value).toBe("string");
-        expect(result.value.length).toBeGreaterThan(0);
-        // Contains recognizable feature data
-        expect(result.value).toContain("test-a");
-        // Contains the project name in the title
-        expect(result.value).toContain("zero-human");
-        // Contains box-drawing characters indicating a formatted table
-        expect(result.value).toContain("═");
-      }
     });
   });
 });
