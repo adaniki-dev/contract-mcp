@@ -9,8 +9,6 @@ import type {
 import { DEFAULT_CONTRACTS_DIR, CONTRACT_FILE_PATTERN } from "@shared/config";
 import { join } from "path";
 
-const RECURSIVE_PATTERN = "**/*.contract.yaml";
-
 export async function compileOne(
   contractPath: string
 ): Promise<Result<Contract, CompileError[]>> {
@@ -18,7 +16,7 @@ export async function compileOne(
 }
 
 async function scanContracts(dir: string, recursive: boolean): Promise<string[]> {
-  const pattern = recursive ? RECURSIVE_PATTERN : CONTRACT_FILE_PATTERN;
+  const pattern = recursive ? `**/${CONTRACT_FILE_PATTERN}` : CONTRACT_FILE_PATTERN;
   const glob = new Bun.Glob(pattern);
   const paths: string[] = [];
 
