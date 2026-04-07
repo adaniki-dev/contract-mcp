@@ -1,5 +1,5 @@
 import { compileOne } from "@features/compiler";
-import { xmlSuccess, xmlError, toXml } from "@shared/lib/xml";
+import { xmlSuccess, xmlError, formatContract } from "@shared/lib/xml";
 import { DEFAULT_CONTRACTS_DIR } from "@shared/config";
 import { join } from "path";
 
@@ -23,7 +23,7 @@ export async function handleGetFeature(args: {
       );
     }
 
-    return xmlSuccess("get_feature", toXml(result.value, "contract"));
+    return xmlSuccess("get_feature", formatContract(result.value));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return xmlError("get_feature", "INTERNAL_ERROR", message);

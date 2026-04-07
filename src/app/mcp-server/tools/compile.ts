@@ -1,5 +1,5 @@
 import { compileAll } from "@features/compiler";
-import { xmlSuccess, xmlError, toXml } from "@shared/lib/xml";
+import { xmlSuccess, xmlError, formatCompileResult } from "@shared/lib/xml";
 import { join } from "path";
 
 export async function handleCompile(args: {
@@ -19,22 +19,7 @@ export async function handleCompile(args: {
       );
     }
 
-    const { contracts, diagnostics } = result.value;
-    const contractsXml = contracts
-      .map(
-        (c) =>
-          `<contract feature="${c.contract.feature}" status="${c.contract.status}" />`
-      )
-      .join("\n");
-    const diagXml =
-      diagnostics.length > 0
-        ? toXml(diagnostics, "diagnostics")
-        : '<diagnostics count="0" />';
-
-    return xmlSuccess(
-      "compile",
-      `<contracts count="${contracts.length}">\n${contractsXml}\n</contracts>\n${diagXml}`
-    );
+    return xmlSuccess("compile", formatCompileResult(result.value));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return xmlError("compile", "INTERNAL_ERROR", message);

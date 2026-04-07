@@ -1,5 +1,10 @@
 import { validate, validateAll } from "@features/validator";
-import { xmlSuccess, xmlError, toXml, xmlElement } from "@shared/lib/xml";
+import {
+  xmlSuccess,
+  xmlError,
+  formatValidationResult,
+  formatValidationResults,
+} from "@shared/lib/xml";
 
 export async function handleValidate(args: {
   feature?: string;
@@ -15,62 +20,16 @@ export async function handleValidate(args: {
         return xmlError("validate", "VALIDATION_ERROR", result.error.message);
       }
 
-      const { feature, valid, violations } = result.value;
-      const violationsXml =
-        violations.length > 0
-          ? toXml(violations, "violations")
-          : '<violations count="0" />';
-
-      return xmlSuccess(
-        "validate",
-        xmlElement(
-          "result",
-          { feature, valid },
-          `\n${violationsXml}\n`
-        )
-      );
+      return xmlSuccess("validate", formatValidationResult(result.value));
     }
 
-    // Validate all
     const result = await validateAll(root);
 
     if (!result.ok) {
       return xmlError("validate", "VALIDATION_ERROR", result.error.message);
     }
 
-    const resultsXml = result.value
-      .map((r) => {
-        const violationsXml =
-          r.violations.length > 0
-            ? toXml(r.violations, "violations")
-            : '<violations count="0" />';
-
-        return xmlElement(
-          "result",
-          { feature: r.feature, valid: r.valid },
-          `\n${violationsXml}\n`
-        );
-      })
-      .join("\n");
-
-    const totalViolations = result.value.reduce(
-      (sum, r) => sum + r.violations.length,
-      0
-    );
-    const allValid = result.value.every((r) => r.valid);
-
-    return xmlSuccess(
-      "validate",
-      xmlElement(
-        "results",
-        {
-          count: result.value.length,
-          valid: allValid,
-          totalViolations,
-        },
-        `\n${resultsXml}\n`
-      )
-    );
+    return xmlSuccess("validate", formatValidationResults(result.value));
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return xmlError("validate", "INTERNAL_ERROR", message);
