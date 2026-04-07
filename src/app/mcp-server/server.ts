@@ -125,6 +125,7 @@ export async function startServer(): Promise<void> {
         description: z.string().optional().describe("Feature description"),
         owner: z.string().optional().describe("Owner (person or team)"),
         deps: z.string().optional().describe("Internal dependencies, comma-separated (e.g. 'database,crypto')"),
+        basePath: z.string().optional().describe("Base path for feature files (default: 'src/features', e.g. 'src/modules', 'packages/core')"),
         outputPath: z.string().optional().describe("Path to write the contract file (e.g. 'contracts/auth.contract.yaml')"),
       },
     },

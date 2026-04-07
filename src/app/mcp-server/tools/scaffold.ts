@@ -8,10 +8,12 @@ function buildContractTemplate(args: {
   description?: string;
   owner?: string;
   deps?: string;
+  basePath?: string;
 }): Record<string, unknown> {
   const feature = args.feature;
   const description = args.description || `Feature ${feature}`;
   const owner = args.owner || "team";
+  const base = args.basePath || "src/features";
 
   const internal = args.deps
     ? args.deps.split(",").map((d) => d.trim()).filter(Boolean).map((d) => ({
@@ -38,9 +40,9 @@ function buildContractTemplate(args: {
     },
     rules: [],
     files: [
-      { path: `src/features/${feature}/index.ts`, purpose: "Barrel export" },
-      { path: `src/features/${feature}/${feature}.ts`, purpose: "Main implementation" },
-      { path: `src/features/${feature}/${feature}.test.ts`, purpose: "Tests" },
+      { path: `${base}/${feature}/index.ts`, purpose: "Barrel export" },
+      { path: `${base}/${feature}/${feature}.ts`, purpose: "Main implementation" },
+      { path: `${base}/${feature}/${feature}.test.ts`, purpose: "Tests" },
     ],
   };
 }
@@ -50,6 +52,7 @@ export async function handleScaffold(args: {
   description?: string;
   owner?: string;
   deps?: string;
+  basePath?: string;
   outputPath?: string;
 }): Promise<string> {
   try {
