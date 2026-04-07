@@ -58,6 +58,16 @@ endpoints:
     input: "{ contractsDir?: string, outputPath?: string }"
     output: "XML<Index>"
     errors: [CONTRACTS_DIR_NOT_FOUND, INDEX_ERROR]
+  - tool: drift
+    description: "Detect drift between the index and actual contract files"
+    input: "{ indexPath?: string, contractsDir?: string }"
+    output: "XML<DriftReport>"
+    errors: [INDEX_NOT_FOUND, COMPILE_ERROR]
+  - tool: scaffold
+    description: "Generate a YAML contract template for a new feature"
+    input: "{ feature: string, description?: string, owner?: string, deps?: string, outputPath?: string }"
+    output: "XML with YAML contract or save confirmation"
+    errors: [INVALID_FEATURE_NAME, WRITE_ERROR]
 
 types:
   - name: McpToolInput
@@ -116,3 +126,7 @@ files:
     purpose: "Handler do tool validate"
   - path: src/app/mcp-server/tools/index-tool.ts
     purpose: "Handler do tool index"
+  - path: src/app/mcp-server/tools/drift.ts
+    purpose: "Handler do tool drift"
+  - path: src/app/mcp-server/tools/scaffold.ts
+    purpose: "Handler do tool scaffold"

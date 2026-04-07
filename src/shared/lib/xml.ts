@@ -161,6 +161,32 @@ ${entries}
 </index>`;
 }
 
+export function formatDriftReport(report: DriftReport): string {
+  const orphaned = report.orphanedContracts
+    .map((f) => `<contract feature="${escapeXml(f)}" />`)
+    .join("\n");
+
+  const missing = report.missingContracts
+    .map((f) => `<contract feature="${escapeXml(f)}" />`)
+    .join("\n");
+
+  const outdated = report.outdatedEntries
+    .map((f) => `<contract feature="${escapeXml(f)}" />`)
+    .join("\n");
+
+  return `<drift hasDrift="${report.hasDrift}">
+<orphaned count="${report.orphanedContracts.length}">
+${orphaned}
+</orphaned>
+<missing count="${report.missingContracts.length}">
+${missing}
+</missing>
+<outdated count="${report.outdatedEntries.length}">
+${outdated}
+</outdated>
+</drift>`;
+}
+
 // Keep toXml as fallback for generic serialization
 export function toXml(data: unknown, tag: string): string {
   if (data === null || data === undefined) {

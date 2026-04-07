@@ -6,6 +6,8 @@ import { handleGetFeature } from "./tools/get-feature";
 import { handleGetDependencies } from "./tools/get-dependencies";
 import { handleValidate } from "./tools/validate";
 import { handleIndex } from "./tools/index-tool";
+import { handleDrift } from "./tools/drift";
+import { handleScaffold } from "./tools/scaffold";
 import { startDashboard } from "@features/dashboard";
 
 export async function startServer(): Promise<void> {
@@ -95,6 +97,39 @@ export async function startServer(): Promise<void> {
     },
     async (args) => {
       const xml = await handleIndex(args);
+      return { content: [{ type: "text" as const, text: xml }] };
+    }
+  );
+
+  server.registerTool(
+    "drift",
+    {
+      description: "Detect drift between the index and actual contract files",
+      inputSchema: {
+        indexPath: z.string().optional().describe("Path to existing index YAML"),
+        contractsDir: z.string().optional().describe("Contracts directory path"),
+      },
+    },
+    async (args) => {
+      const xml = await handleDrift(args);
+      return { content: [{ type: "text" as const, text: xml }] };
+    }
+  );
+
+  server.registerTool(
+    "scaffold",
+    {
+      description: "Generate a YAML contract template for a new feature",
+      inputSchema: {
+        feature: z.string().describe("Feature slug in kebab-case (e.g. 'auth', 'payment-gateway')"),
+        description: z.string().optional().describe("Feature description"),
+        owner: z.string().optional().describe("Owner (person or team)"),
+        deps: z.string().optional().describe("Internal dependencies, comma-separated (e.g. 'database,crypto')"),
+        outputPath: z.string().optional().describe("Path to write the contract file (e.g. 'contracts/auth.contract.yaml')"),
+      },
+    },
+    async (args) => {
+      const xml = await handleScaffold(args);
       return { content: [{ type: "text" as const, text: xml }] };
     }
   );

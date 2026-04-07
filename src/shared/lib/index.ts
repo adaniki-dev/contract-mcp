@@ -11,6 +11,7 @@ export {
   formatValidationResult,
   formatValidationResults,
   formatIndex,
+  formatDriftReport,
 } from "./xml";
 export {
   initParsers,
