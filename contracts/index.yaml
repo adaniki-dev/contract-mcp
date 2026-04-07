@@ -1,8 +1,16 @@
 version: 1.0.0
 project: zero-human
-updatedAt: 2026-04-07T19:43:42.816Z
+updatedAt: 2026-04-07T19:48:52.427Z
 contractsDir: /home/adan/workspace/zero-human/contracts
 features:
+  - feature: dependency-graph
+    contractPath: dependency-graph.contract.yaml
+    status: draft
+    description: Constrói e analisa grafo de dependências entre features a partir
+      dos contratos
+    dependsOn: []
+    exportsCount: 1
+    rulesCount: 3
   - feature: validator
     contractPath: validator.contract.yaml
     status: draft
@@ -10,8 +18,16 @@ features:
     dependsOn:
       - compiler
       - contract-entity
+      - dependency-graph
     exportsCount: 5
     rulesCount: 5
+  - feature: contract-entity
+    contractPath: contract-entity.contract.yaml
+    status: draft
+    description: Carrega e valida contratos YAML, transformando em objetos tipados
+    dependsOn: []
+    exportsCount: 4
+    rulesCount: 4
   - feature: mcp-server
     contractPath: mcp-server.contract.yaml
     status: draft

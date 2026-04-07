@@ -1,0 +1,88 @@
+contract:
+  version: "1.0.0"
+  feature: contract-entity
+  description: "Carrega e valida contratos YAML, transformando em objetos tipados"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal: []
+  external:
+    - package: yaml
+      version: "^2.7.1"
+      reason: "Parse de YAML via shared/lib/yaml"
+
+exports:
+  functions:
+    - name: loadContract
+      signature: "(path: string) => Promise<Result<Contract, CompileError[]>>"
+      description: "Carrega um arquivo .contract.yaml, parseia e valida a estrutura"
+      pure: false
+    - name: validateContractStructure
+      signature: "(raw: unknown, filePath: string) => CompileError[]"
+      description: "Valida que um objeto raw tem todos os campos obrigatórios de um contrato"
+      pure: true
+  types:
+    - name: Contract
+      description: "Tipo principal que representa um contrato completo"
+    - name: CompileError
+      description: "Erro de compilação com path, mensagem e severidade"
+
+types:
+  - name: Contract
+    description: "Contrato completo carregado de YAML"
+    fields:
+      - name: contract
+        type: ContractMeta
+        required: true
+        description: "Metadata do contrato (version, feature, description, owner, status)"
+      - name: dependencies
+        type: ContractDependencies
+        required: true
+        description: "Dependências internas e externas"
+      - name: exports
+        type: ContractExports
+        required: true
+        description: "Funções e tipos públicos"
+      - name: endpoints
+        type: "Endpoint[]"
+        required: false
+        description: "Tools MCP expostos (opcional)"
+      - name: types
+        type: "ContractType[]"
+        required: false
+        description: "Tipos de domínio"
+      - name: rules
+        type: "Rule[]"
+        required: true
+        description: "Regras de negócio"
+      - name: files
+        type: "ContractFile[]"
+        required: true
+        description: "Arquivos esperados"
+
+rules:
+  - id: required-blocks
+    description: "contract, dependencies, exports, rules e files são blocos obrigatórios"
+    severity: error
+    testable: true
+  - id: valid-status
+    description: "contract.status deve ser draft, active ou deprecated"
+    severity: error
+    testable: true
+  - id: typed-fields
+    description: "Cada campo deve ter o tipo correto (string, array, boolean conforme schema)"
+    severity: error
+    testable: true
+  - id: graceful-missing-file
+    description: "Retorna Result error para arquivos inexistentes, nunca throw"
+    severity: error
+    testable: true
+
+files:
+  - path: src/entities/contract/index.ts
+    purpose: "Barrel export público"
+  - path: src/entities/contract/contract.ts
+    purpose: "Lógica de carregamento e validação de contratos"
+  - path: src/entities/contract/contract.test.ts
+    purpose: "Testes do contract entity"

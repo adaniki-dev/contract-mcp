@@ -1,0 +1,47 @@
+contract:
+  version: "1.0.0"
+  feature: dependency-graph
+  description: "Constrói e analisa grafo de dependências entre features a partir dos contratos"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal: []
+  external: []
+
+exports:
+  functions: []
+  types:
+    - name: DependencyGraph
+      description: "Classe que representa o grafo de dependências com métodos de análise"
+
+types:
+  - name: DependencyGraph
+    description: "Grafo de dependências entre features"
+    fields:
+      - name: adjacency
+        type: "Map<string, string[]>"
+        required: true
+        description: "Lista de adjacência — feature → suas dependências"
+
+rules:
+  - id: pure-data-structure
+    description: "DependencyGraph não faz I/O — é uma estrutura de dados pura in-memory"
+    severity: error
+    testable: true
+  - id: cycle-detection
+    description: "detectCircular() deve encontrar todos os ciclos usando DFS 3-color"
+    severity: error
+    testable: true
+  - id: transitive-resolution
+    description: "getTransitiveDeps() deve resolver toda a cadeia de dependências"
+    severity: error
+    testable: true
+
+files:
+  - path: src/entities/dependency-graph/index.ts
+    purpose: "Barrel export público"
+  - path: src/entities/dependency-graph/graph.ts
+    purpose: "Implementação do DependencyGraph"
+  - path: src/entities/dependency-graph/graph.test.ts
+    purpose: "Testes do dependency graph"

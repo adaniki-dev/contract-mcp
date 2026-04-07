@@ -11,6 +11,8 @@ dependencies:
       reason: "Precisa dos contratos compilados para validar contra o código"
     - feature: contract-entity
       reason: "Usa tipos de domínio dos contratos"
+    - feature: dependency-graph
+      reason: "Usa DependencyGraph para detectar dependências circulares"
   external:
     - package: oxc-parser
       version: "^0.65.0"
