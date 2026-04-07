@@ -29,11 +29,12 @@ function contractToEntry(contract: Contract): IndexEntry {
 }
 
 export async function buildIndex(
-  contractsDir?: string
+  contractsDir?: string,
+  projectRoot?: string
 ): Promise<Result<Index, IndexError>> {
   const dir = contractsDir ?? DEFAULT_CONTRACTS_DIR;
 
-  const compileResult = await compileAll(dir);
+  const compileResult = await compileAll(dir, projectRoot);
 
   if (!compileResult.ok) {
     return {

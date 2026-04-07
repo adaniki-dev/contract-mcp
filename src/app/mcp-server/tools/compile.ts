@@ -9,7 +9,7 @@ export async function handleCompile(args: {
     const dir = args.contractsDir
       ? join(process.cwd(), args.contractsDir)
       : undefined;
-    const result = await compileAll(dir);
+    const result = await compileAll(dir, process.cwd());
 
     if (!result.ok) {
       return xmlError(

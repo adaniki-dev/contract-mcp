@@ -227,7 +227,7 @@ export async function validateAll(
   projectRoot: string
 ): Promise<Result<ValidationResult[], ValidationError>> {
   const contractsDir = join(projectRoot, DEFAULT_CONTRACTS_DIR);
-  const compileResult = await compileAll(contractsDir);
+  const compileResult = await compileAll(contractsDir, projectRoot);
 
   if (!compileResult.ok) {
     const messages = compileResult.error.map((e) => e.message).join("; ");

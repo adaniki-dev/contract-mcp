@@ -7,7 +7,7 @@ export async function handleGetDependencies(args: {
   depth?: number;
 }): Promise<string> {
   try {
-    const result = await compileAll();
+    const result = await compileAll(undefined, process.cwd());
 
     if (!result.ok) {
       return xmlError(

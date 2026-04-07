@@ -68,7 +68,7 @@ function buildDashboardData(
 
 async function collectData(projectRoot: string): Promise<Result<FullData, DashboardError>> {
   const contractsDir = join(projectRoot, DEFAULT_CONTRACTS_DIR);
-  const compileResult = await compileAll(contractsDir);
+  const compileResult = await compileAll(contractsDir, projectRoot);
 
   if (!compileResult.ok) {
     return {
