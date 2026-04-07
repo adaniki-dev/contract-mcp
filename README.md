@@ -6,6 +6,7 @@
   <img src="https://img.shields.io/badge/protocol-MCP-8b5cf6?style=flat-square" alt="MCP" />
   <img src="https://img.shields.io/badge/contracts-YAML-cb171e?style=flat-square&logo=yaml" alt="YAML" />
   <img src="https://img.shields.io/badge/output-XML-f48024?style=flat-square" alt="XML" />
+  <img src="https://img.shields.io/badge/tools-9-3fb950?style=flat-square" alt="9 Tools" />
 </p>
 
 # MCP Contractor
@@ -53,31 +54,104 @@ AI agents working on large codebases often:
 
 ---
 
-## Features
+## MCP Tools
 
-### MCP Tools (for AI)
+9 tools available, organized by workflow:
+
+### Discovery
+
+| Tool | Description |
+|------|-------------|
+| `search` | Search contracts with filters (query, status, dependsOn, dependedBy, owner, hasRules, hasViolations) |
+| `get_feature` | Get the full contract of a feature as optimized XML |
+| `get_dependencies` | Get dependency graph (direct + transitive + circular detection) |
+
+### Analysis
 
 | Tool | Description |
 |------|-------------|
 | `compile` | Compile all contracts, return XML diagnostic report |
-| `get_feature` | Get the full contract of a feature as optimized XML |
-| `get_dependencies` | Get dependency graph (direct + transitive + circular detection) |
 | `validate` | Verify implementation code matches contract declarations |
+| `drift` | Detect drift between the index and actual contract files |
 | `index` | Generate or update the contracts YAML index |
+
+### Mutation
+
+| Tool | Description |
+|------|-------------|
+| `scaffold` | Generate a YAML contract template for a new feature (configurable `basePath`) |
+| `update` | Modify an existing contract (metadata, deps, rules, files) |
 
 All responses are **token-optimized XML** -- compact, action-oriented, no redundancy.
 
-### Web Dashboard (for Humans)
+### Example Workflows
 
-A live dashboard served on `localhost:8000` with three views:
+**AI exploring a new codebase:**
+```
+search({ status: "active" })           -> overview of active features
+get_feature({ feature: "auth" })       -> full contract details
+get_dependencies({ feature: "auth" })  -> what auth depends on
+```
 
-- **Summary** -- Status bar, metric cards, features table with inline violations
-- **Project** -- Tree view of contracts + humanized contract detail cards
-- **Brain Link** -- Interactive force-directed dependency graph (Canvas 2D, drag & hover)
+**AI before modifying code:**
+```
+search({ dependsOn: "database" })      -> who depends on database?
+validate({ feature: "database" })      -> is database currently valid?
+get_feature({ feature: "database" })   -> read the rules before changing
+```
 
-The dashboard starts automatically alongside the MCP server.
+**AI creating a new feature:**
+```
+scaffold({ feature: "payments", basePath: "src/modules", deps: "auth,database" })
+update({ feature: "payments", addRules: "idempotent-charges", status: "draft" })
+validate({ feature: "payments" })
+```
 
-### Contract Validation
+**AI checking health:**
+```
+compile()                               -> any broken contracts?
+drift()                                 -> index up to date?
+search({ hasViolations: true })         -> which features have problems?
+```
+
+---
+
+## Search Filters
+
+The `search` tool supports combining multiple filters for precise queries:
+
+| Filter | Type | Description |
+|--------|------|-------------|
+| `query` | string | Text search across all fields (name, description, deps, exports, rules, files) |
+| `status` | string | Filter by `draft`, `active`, or `deprecated` |
+| `dependsOn` | string | Find features that depend on this feature |
+| `dependedBy` | string | Find features that this feature depends on |
+| `owner` | string | Filter by contract owner |
+| `hasRules` | string | Find features with rules matching this ID |
+| `hasViolations` | boolean | `true` = only broken features, `false` = only clean |
+
+All filters are combinable: `search({ dependsOn: "compiler", status: "active" })`
+
+---
+
+## Web Dashboard (for Humans)
+
+A live dashboard auto-starts on `localhost:8000` (auto-fallback to next port if busy):
+
+| View | URL | Description |
+|------|-----|-------------|
+| **Summary** | `/` | Status bar, metric cards, features table with inline violations |
+| **Project** | `/project` | Tree view of contracts + humanized contract detail cards |
+| **Brain Link** | `/graph` | Interactive force-directed dependency graph (Canvas 2D, drag & hover) |
+
+API endpoints for integration:
+- `GET /api/data` -- Dashboard summary (JSON)
+- `GET /api/contracts` -- All compiled contracts (JSON)
+- `GET /api/graph` -- Dependency graph nodes + edges (JSON)
+
+---
+
+## Contract Validation
 
 The validator checks your code against its contracts:
 
@@ -86,12 +160,18 @@ The validator checks your code against its contracts:
 - **no-circular-deps** -- Circular dependencies between features are detected
 - **files-exist** -- Declared files must exist in the filesystem
 
-### Contract Discovery
+Feature discovery is dynamic -- the validator searches `src/**/features/{name}/` and `src/**/{name}/` to find feature directories, supporting any project structure.
+
+---
+
+## Contract Discovery
 
 Contracts are scanned from two locations:
 
 - `contracts/` -- Centralized project-wide contracts (flat scan)
 - `src/**/` -- Feature-local contracts colocated with code (recursive `**/*.contract.yaml`)
+
+Ignored directories: `node_modules`, `dist`, `build`, `.git`, `.next`, `.nuxt`, `.svelte-kit`, `coverage`, `.turbo`, `.cache`
 
 ---
 
@@ -101,12 +181,6 @@ Contracts are scanned from two locations:
 
 ```bash
 bun install
-```
-
-### Run as MCP Server
-
-```bash
-bun run dev
 ```
 
 ### Connect to Claude Code
@@ -125,11 +199,13 @@ Create `.mcp.json` in your project root:
 }
 ```
 
-Restart Claude Code. You'll see 5 new tools available.
+Restart Claude Code. You'll see 9 new tools available. The dashboard opens automatically at **http://localhost:8000**.
 
-### Open Dashboard
+### Run Standalone
 
-After the MCP server starts, open: **http://localhost:8000**
+```bash
+bun run dev    # Start MCP server (stdio)
+```
 
 ---
 
@@ -143,7 +219,7 @@ contract:
   feature: auth
   description: "Authentication and authorization"
   owner: backend-team
-  status: active
+  status: active              # draft | active | deprecated
 
 dependencies:
   internal:
@@ -167,7 +243,7 @@ exports:
 rules:
   - id: token-expiry
     description: "Tokens must expire within 24 hours"
-    severity: error
+    severity: error           # error | warning | info
     testable: true
   - id: rate-limit
     description: "Max 5 failed attempts per minute per IP"
@@ -179,6 +255,11 @@ files:
     purpose: "Barrel export"
   - path: src/features/auth/auth.ts
     purpose: "Core authentication logic"
+```
+
+The `scaffold` tool generates this template automatically:
+```
+scaffold({ feature: "auth", basePath: "src/modules", deps: "database,crypto", owner: "backend-team" })
 ```
 
 ---
@@ -193,23 +274,23 @@ shared ← entities ← features ← app
 
 ```
 src/
-  shared/          # No business logic: helpers, types, config
-    lib/           #   yaml, xml, parsers (oxc-parser, es-module-lexer)
-    types/         #   TypeScript type definitions
-    config/        #   Constants and defaults
-  entities/        # Domain models
-    contract/      #   YAML loader, structure validator
-    dependency-graph/  # Graph builder, cycle detection (DFS)
-  features/        # Use cases
-    compiler/      #   Parse + validate contracts
-    validator/     #   Verify code matches contracts
-    indexer/       #   Build index, detect drift
-    dashboard/     #   Web UI server (Bun.serve)
-  app/             # Composition
-    mcp-server/    #   MCP server + 5 tool handlers
-    index.ts       #   Entry point
-contracts/         # YAML contracts (source of truth)
-  _schema/         #   Meta-schemas
+  shared/              # No business logic: helpers, types, config
+    lib/               #   yaml, xml, parsers (oxc-parser, es-module-lexer)
+    types/             #   TypeScript type definitions
+    config/            #   Constants, defaults, ignored dirs
+  entities/            # Domain models
+    contract/          #   YAML loader, structure validator
+    dependency-graph/  #   Graph builder, cycle detection (DFS)
+  features/            # Use cases
+    compiler/          #   Parse + validate contracts
+    validator/         #   Verify code matches contracts
+    indexer/           #   Build index, detect drift
+    dashboard/         #   Web UI server (Bun.serve) + views
+  app/                 # Composition
+    mcp-server/        #   MCP server + 9 tool handlers
+    index.ts           #   Entry point
+contracts/             # YAML contracts (source of truth)
+  _schema/             #   Meta-schemas
 ```
 
 **Import rule:** layers only import downward. Features never import from each other -- they communicate through entities.
@@ -233,10 +314,11 @@ tsc --noEmit         # Typecheck only
 contract YAML → tests (TDD) → code
 ```
 
-1. Write or update the contract YAML
+1. Write or update the contract YAML (or use `scaffold` to generate one)
 2. Derive tests from the contract (rules, exports, types)
 3. Implement until tests pass
-4. No code without a contract. No contract change without updating tests.
+4. Run `validate` to check compliance
+5. Run `drift` to ensure the index is current
 
 ---
 
@@ -256,20 +338,19 @@ contract YAML → tests (TDD) → code
 
 ## XML Output (for AI)
 
-Responses are optimized for token efficiency. Example:
+Responses are optimized for token efficiency:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<zero-human tool="validate" status="success">
-<results count="7" valid="true" totalViolations="0">
-<result feature="compiler" valid="true" violations="0" />
-<result feature="validator" valid="true" violations="0" />
-<result feature="dashboard" valid="true" violations="0" />
+<zero-human tool="search" status="success">
+<results dependsOn="compiler" count="4">
+<match feature="validator" status="draft" owner="adam" deps="compiler,contract-entity,dependency-graph" exports="validate,validateAll" rules="5">Verifica se o codigo corresponde aos contratos</match>
+<match feature="dashboard" status="draft" owner="adam" deps="compiler,validator,indexer" exports="startDashboard,renderDashboard,renderHtml" rules="4">Web dashboard humanizado</match>
 </results>
 </zero-human>
 ```
 
-One line per valid feature. Violations only appear when present. Maximum information, minimum tokens.
+One line per result. Attributes for data, text content for descriptions. Maximum information, minimum tokens.
 
 ---
 
