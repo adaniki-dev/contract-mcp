@@ -1,0 +1,135 @@
+contract:
+  version: "1.0.0"
+  feature: indexer
+  description: "Escaneia diretório de contratos, gera índice YAML e detecta drift"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal:
+    - feature: compiler
+      reason: "Precisa compilar os contratos para extrair metadata"
+    - feature: contract-entity
+      reason: "Usa tipos de domínio dos contratos"
+  external: []
+
+exports:
+  functions:
+    - name: buildIndex
+      signature: "(contractsDir: string) => Result<Index, IndexError>"
+      description: "Escaneia todos os .contract.yaml e gera o índice"
+      pure: true
+    - name: detectDrift
+      signature: "(indexPath: string, contractsDir: string) => DriftReport"
+      description: "Compara índice existente com estado atual dos contratos"
+      pure: true
+  types:
+    - name: Index
+      description: "Índice completo dos contratos do projeto"
+    - name: IndexEntry
+      description: "Entrada individual no índice"
+    - name: DriftReport
+      description: "Relatório de drift entre índice e contratos reais"
+    - name: IndexError
+      description: "Erro durante geração do índice"
+
+types:
+  - name: Index
+    description: "Índice de todos os contratos"
+    fields:
+      - name: version
+        type: string
+        required: true
+        description: "Versão do schema do índice"
+      - name: project
+        type: string
+        required: true
+        description: "Nome do projeto"
+      - name: updatedAt
+        type: string
+        required: true
+        description: "ISO 8601 timestamp"
+      - name: contractsDir
+        type: string
+        required: true
+        description: "Diretório raiz dos contratos"
+      - name: features
+        type: "IndexEntry[]"
+        required: true
+        description: "Lista de features indexadas"
+  - name: IndexEntry
+    description: "Feature no índice"
+    fields:
+      - name: feature
+        type: string
+        required: true
+        description: "Slug da feature"
+      - name: contractPath
+        type: string
+        required: true
+        description: "Caminho do .contract.yaml"
+      - name: status
+        type: "draft | active | deprecated"
+        required: true
+        description: "Status do contrato"
+      - name: description
+        type: string
+        required: true
+        description: "Descrição da feature"
+      - name: dependsOn
+        type: "string[]"
+        required: true
+        description: "Features das quais depende"
+      - name: exportsCount
+        type: number
+        required: true
+        description: "Quantidade de exports"
+      - name: rulesCount
+        type: number
+        required: true
+        description: "Quantidade de regras"
+  - name: DriftReport
+    description: "Relatório de drift"
+    fields:
+      - name: orphanedContracts
+        type: "string[]"
+        required: true
+        description: "Contratos que existem mas não estão no índice"
+      - name: missingContracts
+        type: "string[]"
+        required: true
+        description: "Entradas no índice que não têm contrato correspondente"
+      - name: outdatedEntries
+        type: "string[]"
+        required: true
+        description: "Entradas no índice cujos dados não batem com o contrato"
+      - name: hasDrift
+        type: boolean
+        required: true
+        description: "Se existe algum drift"
+
+rules:
+  - id: all-contracts-indexed
+    description: "Todo .contract.yaml no diretório deve estar no índice"
+    severity: error
+    testable: true
+  - id: no-phantom-entries
+    description: "Toda entrada no índice deve ter um .contract.yaml correspondente"
+    severity: error
+    testable: true
+  - id: index-regenerable
+    description: "Índice deve ser regenerável do zero — sem edições manuais"
+    severity: info
+    testable: true
+  - id: metadata-sync
+    description: "Metadata no índice deve bater com o contrato (status, description, deps)"
+    severity: warning
+    testable: true
+
+files:
+  - path: src/features/indexer/index.ts
+    purpose: "Barrel export público"
+  - path: src/features/indexer/indexer.ts
+    purpose: "Lógica core do indexer"
+  - path: src/features/indexer/indexer.test.ts
+    purpose: "Testes do indexer"

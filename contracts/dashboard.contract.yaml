@@ -1,0 +1,108 @@
+contract:
+  version: "1.0.0"
+  feature: dashboard
+  description: "Gera relatório humanizado do status dos contratos para desenvolvedores"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal:
+    - feature: compiler
+      reason: "Precisa dos contratos compilados para mostrar status"
+    - feature: validator
+      reason: "Precisa dos resultados de validação"
+    - feature: indexer
+      reason: "Usa o índice para visão geral"
+  external: []
+
+exports:
+  functions:
+    - name: renderDashboard
+      signature: "(projectRoot: string) => Result<string, DashboardError>"
+      description: "Gera dashboard em texto formatado para terminal"
+      pure: true
+    - name: renderHtml
+      signature: "(projectRoot: string) => Result<string, DashboardError>"
+      description: "Gera dashboard em HTML para visualização web (futuro)"
+      pure: true
+  types:
+    - name: DashboardData
+      description: "Dados agregados para renderização do dashboard"
+    - name: FeatureSummary
+      description: "Resumo de uma feature para o dashboard"
+    - name: DashboardError
+      description: "Erro durante geração do dashboard"
+
+types:
+  - name: DashboardData
+    description: "Dados do dashboard"
+    fields:
+      - name: project
+        type: string
+        required: true
+        description: "Nome do projeto"
+      - name: totalFeatures
+        type: number
+        required: true
+        description: "Total de features"
+      - name: totalRules
+        type: number
+        required: true
+        description: "Total de regras"
+      - name: totalViolations
+        type: number
+        required: true
+        description: "Total de violações"
+      - name: features
+        type: "FeatureSummary[]"
+        required: true
+        description: "Resumo por feature"
+  - name: FeatureSummary
+    description: "Resumo de uma feature"
+    fields:
+      - name: feature
+        type: string
+        required: true
+        description: "Slug da feature"
+      - name: status
+        type: "draft | active | deprecated"
+        required: true
+        description: "Status do contrato"
+      - name: valid
+        type: boolean
+        required: true
+        description: "Se está em conformidade"
+      - name: violationsCount
+        type: number
+        required: true
+        description: "Quantidade de violações"
+      - name: dependenciesCount
+        type: number
+        required: true
+        description: "Quantidade de dependências"
+      - name: rulesCount
+        type: number
+        required: true
+        description: "Quantidade de regras"
+
+rules:
+  - id: read-only
+    description: "Dashboard nunca modifica contratos — apenas leitura"
+    severity: error
+    testable: true
+  - id: complete-overview
+    description: "Dashboard deve mostrar: feature, status, validação pass/fail, deps, rules"
+    severity: warning
+    testable: true
+  - id: human-readable
+    description: "Output deve ser legível por humanos sem ferramentas adicionais"
+    severity: info
+    testable: false
+
+files:
+  - path: src/features/dashboard/index.ts
+    purpose: "Barrel export público"
+  - path: src/features/dashboard/dashboard.ts
+    purpose: "Lógica de renderização do dashboard"
+  - path: src/features/dashboard/dashboard.test.ts
+    purpose: "Testes do dashboard"

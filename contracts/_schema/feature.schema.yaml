@@ -1,0 +1,57 @@
+# Schema para contratos de feature do zero-human
+# Cada feature do projeto deve ter um .contract.yaml seguindo esta estrutura
+
+contract:
+  version: string         # semver do contrato (ex: "1.0.0")
+  feature: string         # slug único kebab-case (ex: "compiler")
+  description: string     # uma frase descrevendo o propósito
+  owner: string           # responsável (pessoa ou time)
+  status:                 # ciclo de vida do contrato
+    enum: [draft, active, deprecated]
+
+dependencies:
+  internal:               # features do zero-human que esta feature depende
+    - feature: string     # slug da feature
+      reason: string      # por que essa dependência existe
+  external:               # pacotes npm
+    - package: string     # nome do pacote
+      version: string     # range semver
+      reason: string      # por que esse pacote é necessário
+
+exports:
+  functions:              # funções públicas expostas via barrel index.ts
+    - name: string        # nome da função
+      signature: string   # assinatura TypeScript completa
+      description: string # o que faz
+      pure: boolean       # livre de side-effects?
+  types:                  # tipos públicos exportados
+    - name: string        # nome do tipo
+      description: string # o que representa
+
+endpoints:                # apenas para features que expõem tools MCP
+  - tool: string          # nome do tool MCP
+    description: string   # o que o tool faz
+    input: string         # tipo TS do input
+    output: string        # tipo TS do output
+    errors:               # códigos de erro possíveis
+      - string
+
+types:                    # tipos de domínio que esta feature possui
+  - name: string          # nome do tipo
+    description: string   # o que representa
+    fields:
+      - name: string      # nome do campo
+        type: string      # tipo TS
+        required: boolean # obrigatório?
+        description: string
+
+rules:                    # invariantes de negócio
+  - id: string            # slug da regra (ex: "no-circular-deps")
+    description: string   # descrição legível
+    severity:             # nível de severidade
+      enum: [error, warning, info]
+    testable: boolean     # pode ser verificada automaticamente?
+
+files:                    # estrutura de arquivos esperada
+  - path: string          # caminho relativo da raiz do projeto
+    purpose: string       # propósito do arquivo

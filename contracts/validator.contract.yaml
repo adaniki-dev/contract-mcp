@@ -1,0 +1,119 @@
+contract:
+  version: "1.0.0"
+  feature: validator
+  description: "Verifica se o código implementado corresponde ao que os contratos declaram"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal:
+    - feature: compiler
+      reason: "Precisa dos contratos compilados para validar contra o código"
+    - feature: contract-entity
+      reason: "Usa tipos de domínio dos contratos"
+  external:
+    - package: oxc-parser
+      version: "^0.65.0"
+      reason: "Parser JS/TS para análise de AST dos arquivos de implementação"
+    - package: es-module-lexer
+      version: "^1.6.0"
+      reason: "Análise rápida de imports/exports dos módulos"
+
+exports:
+  functions:
+    - name: validate
+      signature: "(feature: string, projectRoot: string) => Result<ValidationResult, ValidationError>"
+      description: "Valida o código de uma feature contra seu contrato"
+      pure: true
+    - name: validateAll
+      signature: "(projectRoot: string) => Result<ValidationResult[], ValidationError>"
+      description: "Valida todas as features do projeto"
+      pure: true
+  types:
+    - name: ValidationResult
+      description: "Resultado da validação de uma feature"
+    - name: ValidationError
+      description: "Erro durante o processo de validação"
+    - name: Violation
+      description: "Violação individual encontrada"
+
+types:
+  - name: ValidationResult
+    description: "Resultado da validação de uma feature"
+    fields:
+      - name: feature
+        type: string
+        required: true
+        description: "Slug da feature validada"
+      - name: valid
+        type: boolean
+        required: true
+        description: "Se a feature está em conformidade"
+      - name: violations
+        type: "Violation[]"
+        required: true
+        description: "Lista de violações encontradas"
+  - name: ValidationError
+    description: "Erro no processo de validação"
+    fields:
+      - name: feature
+        type: string
+        required: true
+        description: "Feature que causou o erro"
+      - name: message
+        type: string
+        required: true
+        description: "Mensagem de erro"
+  - name: Violation
+    description: "Violação de contrato encontrada no código"
+    fields:
+      - name: rule
+        type: string
+        required: true
+        description: "ID da regra violada"
+      - name: message
+        type: string
+        required: true
+        description: "Descrição da violação"
+      - name: severity
+        type: "error | warning | info"
+        required: true
+        description: "Severidade"
+      - name: file
+        type: string
+        required: false
+        description: "Arquivo onde a violação foi encontrada"
+      - name: line
+        type: number
+        required: false
+        description: "Linha da violação"
+
+rules:
+  - id: exports-match
+    description: "Exports declarados no contrato devem existir no barrel index.ts da feature"
+    severity: error
+    testable: true
+  - id: deps-declared
+    description: "Imports de outras features devem estar declarados em dependencies.internal"
+    severity: error
+    testable: true
+  - id: no-circular-deps
+    description: "Não pode haver dependências circulares entre features"
+    severity: error
+    testable: true
+  - id: no-cross-feature-imports
+    description: "Features não podem importar diretamente de outras features — apenas via entities"
+    severity: error
+    testable: true
+  - id: files-exist
+    description: "Arquivos declarados no contrato devem existir no filesystem"
+    severity: warning
+    testable: true
+
+files:
+  - path: src/features/validator/index.ts
+    purpose: "Barrel export público"
+  - path: src/features/validator/validator.ts
+    purpose: "Lógica core de validação"
+  - path: src/features/validator/validator.test.ts
+    purpose: "Testes do validador"

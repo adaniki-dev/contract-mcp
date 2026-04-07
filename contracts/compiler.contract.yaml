@@ -1,0 +1,110 @@
+contract:
+  version: "1.0.0"
+  feature: compiler
+  description: "Parseia contratos YAML, valida contra o schema e retorna diagnósticos"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal:
+    - feature: contract-entity
+      reason: "Usa tipos e parser de contratos do domínio"
+  external:
+    - package: yaml
+      version: "^2.7.1"
+      reason: "Parse e serialize de YAML"
+
+exports:
+  functions:
+    - name: compileOne
+      signature: "(contractPath: string) => Result<Contract, CompileError[]>"
+      description: "Compila um único contrato YAML e retorna o objeto tipado ou erros"
+      pure: true
+    - name: compileAll
+      signature: "(contractsDir: string) => Result<CompileResult, CompileError[]>"
+      description: "Compila todos os contratos de um diretório"
+      pure: true
+  types:
+    - name: CompileResult
+      description: "Resultado da compilação com todos os contratos válidos"
+    - name: CompileError
+      description: "Erro de compilação com path, mensagem e severidade"
+    - name: Diagnostic
+      description: "Diagnóstico individual de validação"
+
+types:
+  - name: CompileResult
+    description: "Resultado da compilação de todos os contratos"
+    fields:
+      - name: contracts
+        type: "Contract[]"
+        required: true
+        description: "Lista de contratos compilados com sucesso"
+      - name: diagnostics
+        type: "Diagnostic[]"
+        required: true
+        description: "Diagnósticos encontrados durante compilação"
+  - name: CompileError
+    description: "Erro encontrado durante compilação"
+    fields:
+      - name: path
+        type: string
+        required: true
+        description: "Caminho do arquivo com erro"
+      - name: message
+        type: string
+        required: true
+        description: "Mensagem descritiva do erro"
+      - name: severity
+        type: "error | warning | info"
+        required: true
+        description: "Severidade do erro"
+      - name: line
+        type: number
+        required: false
+        description: "Linha do erro no arquivo YAML"
+  - name: Diagnostic
+    description: "Diagnóstico individual"
+    fields:
+      - name: rule
+        type: string
+        required: true
+        description: "ID da regra violada"
+      - name: message
+        type: string
+        required: true
+        description: "Descrição do problema"
+      - name: severity
+        type: "error | warning | info"
+        required: true
+        description: "Severidade"
+      - name: path
+        type: string
+        required: true
+        description: "Arquivo afetado"
+
+rules:
+  - id: valid-yaml-syntax
+    description: "Todos os contratos devem ter YAML válido"
+    severity: error
+    testable: true
+  - id: schema-compliance
+    description: "Contratos devem seguir o feature.schema.yaml"
+    severity: error
+    testable: true
+  - id: required-fields
+    description: "Campos obrigatórios (contract, dependencies, exports, rules) devem estar presentes"
+    severity: error
+    testable: true
+  - id: valid-references
+    description: "Referências a outras features em dependencies.internal devem existir"
+    severity: warning
+    testable: true
+
+files:
+  - path: src/features/compiler/index.ts
+    purpose: "Barrel export público"
+  - path: src/features/compiler/compiler.ts
+    purpose: "Lógica core de compilação"
+  - path: src/features/compiler/compiler.test.ts
+    purpose: "Testes do compilador"

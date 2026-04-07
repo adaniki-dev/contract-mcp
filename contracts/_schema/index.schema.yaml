@@ -1,0 +1,20 @@
+# Schema para o índice de contratos do zero-human
+# Arquivo gerado automaticamente pelo indexer — não editar manualmente
+
+index:
+  version: string           # versão do schema do índice
+  project: string           # nome do projeto
+  updated_at: string        # ISO 8601 timestamp da última atualização
+  contracts_dir: string     # diretório raiz dos contratos
+
+features:
+  - feature: string         # slug da feature
+    contract_path: string   # caminho relativo do arquivo .contract.yaml
+    status:                 # status atual do contrato
+      enum: [draft, active, deprecated]
+    description: string     # descrição curta
+    depends_on:             # slugs das features que esta depende
+      - string
+    exports_count: number   # quantidade de exports públicos
+    rules_count: number     # quantidade de regras de negócio
+    files_count: number     # quantidade de arquivos esperados

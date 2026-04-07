@@ -1,0 +1,116 @@
+contract:
+  version: "1.0.0"
+  feature: mcp-server
+  description: "Servidor MCP que expõe tools de linting de contratos via stdio transport"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal:
+    - feature: compiler
+      reason: "Tool compile usa o compilador"
+    - feature: validator
+      reason: "Tool validate usa o validador"
+    - feature: indexer
+      reason: "Tool index usa o indexer"
+  external:
+    - package: "@modelcontextprotocol/sdk"
+      version: "^1.12.1"
+      reason: "SDK oficial para criar servidores MCP"
+
+exports:
+  functions:
+    - name: startServer
+      signature: "() => Promise<void>"
+      description: "Inicia o servidor MCP via stdio transport"
+      pure: false
+  types:
+    - name: McpToolInput
+      description: "Union discriminada de inputs por tool"
+    - name: McpToolOutput
+      description: "Union discriminada de outputs por tool"
+
+endpoints:
+  - tool: compile
+    description: "Compila todos os contratos do projeto e retorna diagnóstico XML"
+    input: "{ contractsDir?: string }"
+    output: "XML<CompileResult>"
+    errors: [CONTRACTS_DIR_NOT_FOUND, PARSE_ERROR]
+  - tool: get_feature
+    description: "Retorna o contrato completo de uma feature em XML"
+    input: "{ feature: string }"
+    output: "XML<Contract>"
+    errors: [FEATURE_NOT_FOUND, CONTRACT_PARSE_ERROR]
+  - tool: get_dependencies
+    description: "Retorna o grafo de dependências de uma feature em XML"
+    input: "{ feature: string, depth?: number }"
+    output: "XML<DependencyGraph>"
+    errors: [FEATURE_NOT_FOUND, CIRCULAR_DEPENDENCY]
+  - tool: validate
+    description: "Verifica se o código implementado corresponde aos contratos"
+    input: "{ feature?: string, projectRoot?: string }"
+    output: "XML<ValidationResult | ValidationResult[]>"
+    errors: [FEATURE_NOT_FOUND, VALIDATION_ERROR]
+  - tool: index
+    description: "Gera ou atualiza o índice YAML dos contratos"
+    input: "{ contractsDir?: string, outputPath?: string }"
+    output: "XML<Index>"
+    errors: [CONTRACTS_DIR_NOT_FOUND, INDEX_ERROR]
+
+types:
+  - name: McpToolInput
+    description: "Input discriminado por tool"
+    fields:
+      - name: tool
+        type: string
+        required: true
+        description: "Nome do tool sendo chamado"
+      - name: params
+        type: object
+        required: true
+        description: "Parâmetros específicos do tool"
+  - name: McpToolOutput
+    description: "Output em XML"
+    fields:
+      - name: content
+        type: string
+        required: true
+        description: "XML string com o resultado"
+      - name: isError
+        type: boolean
+        required: true
+        description: "Se o resultado é um erro"
+
+rules:
+  - id: xml-output
+    description: "Todos os outputs de tools devem ser XML válido"
+    severity: error
+    testable: true
+  - id: no-throw
+    description: "Tools nunca lançam exceções — retornam XML de erro"
+    severity: error
+    testable: true
+  - id: stdio-transport
+    description: "Servidor deve funcionar via stdio transport para Claude Code"
+    severity: error
+    testable: true
+  - id: graceful-errors
+    description: "Erros devem ter mensagens descritivas e códigos de erro documentados"
+    severity: warning
+    testable: true
+
+files:
+  - path: src/app/index.ts
+    purpose: "Entry point — bootstrap do servidor"
+  - path: src/app/mcp-server/server.ts
+    purpose: "Setup do McpServer e registro de tools"
+  - path: src/app/mcp-server/tools/compile.ts
+    purpose: "Handler do tool compile"
+  - path: src/app/mcp-server/tools/get-feature.ts
+    purpose: "Handler do tool get_feature"
+  - path: src/app/mcp-server/tools/get-dependencies.ts
+    purpose: "Handler do tool get_dependencies"
+  - path: src/app/mcp-server/tools/validate.ts
+    purpose: "Handler do tool validate"
+  - path: src/app/mcp-server/tools/index-tool.ts
+    purpose: "Handler do tool index"
