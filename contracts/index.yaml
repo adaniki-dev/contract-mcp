@@ -1,0 +1,51 @@
+version: 1.0.0
+project: zero-human
+updatedAt: 2026-04-07T19:43:42.816Z
+contractsDir: /home/adan/workspace/zero-human/contracts
+features:
+  - feature: validator
+    contractPath: validator.contract.yaml
+    status: draft
+    description: Verifica se o código implementado corresponde ao que os contratos declaram
+    dependsOn:
+      - compiler
+      - contract-entity
+    exportsCount: 5
+    rulesCount: 5
+  - feature: mcp-server
+    contractPath: mcp-server.contract.yaml
+    status: draft
+    description: Servidor MCP que expõe tools de linting de contratos via stdio transport
+    dependsOn:
+      - compiler
+      - validator
+      - indexer
+    exportsCount: 3
+    rulesCount: 4
+  - feature: compiler
+    contractPath: compiler.contract.yaml
+    status: draft
+    description: Parseia contratos YAML, valida contra o schema e retorna diagnósticos
+    dependsOn:
+      - contract-entity
+    exportsCount: 5
+    rulesCount: 4
+  - feature: dashboard
+    contractPath: dashboard.contract.yaml
+    status: draft
+    description: Gera relatório humanizado do status dos contratos para desenvolvedores
+    dependsOn:
+      - compiler
+      - validator
+      - indexer
+    exportsCount: 5
+    rulesCount: 3
+  - feature: indexer
+    contractPath: indexer.contract.yaml
+    status: draft
+    description: Escaneia diretório de contratos, gera índice YAML e detecta drift
+    dependsOn:
+      - compiler
+      - contract-entity
+    exportsCount: 6
+    rulesCount: 4

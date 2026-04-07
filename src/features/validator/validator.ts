@@ -52,19 +52,25 @@ function extractFeatureFromImport(source: string): string | null {
 /**
  * Check exports-match rule: barrel file exports must match contract declarations.
  */
+function findBarrelPath(contract: Contract, projectRoot: string): string {
+  // Look for an index.ts in the contract's declared files
+  const barrelFile = contract.files.find(
+    (f) => f.path.endsWith("/index.ts") || f.path === "index.ts"
+  );
+  if (barrelFile) {
+    return join(projectRoot, barrelFile.path);
+  }
+  // Fallback to convention
+  return join(projectRoot, "src", "features", contract.contract.feature, "index.ts");
+}
+
 async function checkExportsMatch(
   contract: Contract,
   projectRoot: string
 ): Promise<Violation[]> {
   const violations: Violation[] = [];
   const feature = contract.contract.feature;
-  const barrelPath = join(
-    projectRoot,
-    "src",
-    "features",
-    feature,
-    "index.ts"
-  );
+  const barrelPath = findBarrelPath(contract, projectRoot);
 
   const barrelCode = await readFileSafe(barrelPath);
   if (barrelCode === null) {
@@ -131,7 +137,9 @@ async function checkDependencyImports(
 ): Promise<Violation[]> {
   const violations: Violation[] = [];
   const feature = contract.contract.feature;
-  const featureDir = join(projectRoot, "src", "features", feature);
+  // Derive feature directory from contract files, fallback to convention
+  const barrelPath = findBarrelPath(contract, projectRoot);
+  const featureDir = join(barrelPath, "..");
 
   const declaredDeps = new Set(
     contract.dependencies.internal.map((d) => d.feature)
