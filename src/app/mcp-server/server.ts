@@ -8,6 +8,7 @@ import { handleValidate } from "./tools/validate";
 import { handleIndex } from "./tools/index-tool";
 import { handleDrift } from "./tools/drift";
 import { handleScaffold } from "./tools/scaffold";
+import { handleSearch } from "./tools/search";
 import { startDashboard } from "@features/dashboard";
 
 export async function startServer(): Promise<void> {
@@ -131,6 +132,20 @@ export async function startServer(): Promise<void> {
     },
     async (args) => {
       const xml = await handleScaffold(args);
+      return { content: [{ type: "text" as const, text: xml }] };
+    }
+  );
+
+  server.registerTool(
+    "search",
+    {
+      description: "Search contracts by keyword. Returns compact results — use get_feature for full details.",
+      inputSchema: {
+        query: z.string().describe("Search term (matches feature name, description, deps, exports, rules, files)"),
+      },
+    },
+    async (args) => {
+      const xml = await handleSearch(args);
       return { content: [{ type: "text" as const, text: xml }] };
     }
   );

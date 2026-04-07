@@ -68,6 +68,11 @@ endpoints:
     input: "{ feature: string, description?: string, owner?: string, deps?: string, basePath?: string, outputPath?: string }"
     output: "XML with YAML contract or save confirmation"
     errors: [INVALID_FEATURE_NAME, WRITE_ERROR]
+  - tool: search
+    description: "Search contracts by keyword, returns compact results"
+    input: "{ query: string }"
+    output: "XML<SearchResults>"
+    errors: [COMPILE_ERROR]
 
 types:
   - name: McpToolInput
@@ -130,3 +135,5 @@ files:
     purpose: "Handler do tool drift"
   - path: src/app/mcp-server/tools/scaffold.ts
     purpose: "Handler do tool scaffold"
+  - path: src/app/mcp-server/tools/search.ts
+    purpose: "Handler do tool search"

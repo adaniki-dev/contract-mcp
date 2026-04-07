@@ -1,6 +1,6 @@
 version: 1.0.0
 project: zero-human
-updatedAt: 2026-04-07T23:18:35.118Z
+updatedAt: 2026-04-07T23:25:21.789Z
 contractsDir: /home/adan/workspace/zero-human/contracts
 features:
   - feature: dependency-graph
