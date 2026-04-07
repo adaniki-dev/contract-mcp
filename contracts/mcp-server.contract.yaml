@@ -65,7 +65,7 @@ endpoints:
     errors: [INDEX_NOT_FOUND, COMPILE_ERROR]
   - tool: scaffold
     description: "Generate a YAML contract template for a new feature"
-    input: "{ feature: string, description?: string, owner?: string, deps?: string, outputPath?: string }"
+    input: "{ feature: string, description?: string, owner?: string, deps?: string, basePath?: string, outputPath?: string }"
     output: "XML with YAML contract or save confirmation"
     errors: [INVALID_FEATURE_NAME, WRITE_ERROR]
 
