@@ -13,6 +13,8 @@ dependencies:
       reason: "Tool validate usa o validador"
     - feature: indexer
       reason: "Tool index usa o indexer"
+    - feature: dashboard
+      reason: "Inicia dashboard web junto com o MCP server"
   external:
     - package: "@modelcontextprotocol/sdk"
       version: "^1.12.1"

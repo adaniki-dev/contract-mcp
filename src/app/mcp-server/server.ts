@@ -6,6 +6,7 @@ import { handleGetFeature } from "./tools/get-feature";
 import { handleGetDependencies } from "./tools/get-dependencies";
 import { handleValidate } from "./tools/validate";
 import { handleIndex } from "./tools/index-tool";
+import { startDashboard } from "@features/dashboard";
 
 export async function startServer(): Promise<void> {
   const server = new McpServer({
@@ -97,6 +98,13 @@ export async function startServer(): Promise<void> {
       return { content: [{ type: "text" as const, text: xml }] };
     }
   );
+
+  // Start dashboard web server alongside MCP
+  const dashResult = await startDashboard(process.cwd());
+  if (dashResult.ok) {
+    // Log to stderr so it doesn't interfere with stdio transport
+    console.error(`[zero-human] Dashboard: ${dashResult.value.url}`);
+  }
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
