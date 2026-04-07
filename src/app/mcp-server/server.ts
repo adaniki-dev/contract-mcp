@@ -9,6 +9,7 @@ import { handleIndex } from "./tools/index-tool";
 import { handleDrift } from "./tools/drift";
 import { handleScaffold } from "./tools/scaffold";
 import { handleSearch } from "./tools/search";
+import { handleUpdate } from "./tools/update";
 import { startDashboard } from "@features/dashboard";
 
 export async function startServer(): Promise<void> {
@@ -146,6 +147,29 @@ export async function startServer(): Promise<void> {
     },
     async (args) => {
       const xml = await handleSearch(args);
+      return { content: [{ type: "text" as const, text: xml }] };
+    }
+  );
+
+  server.registerTool(
+    "update",
+    {
+      description: "Update an existing contract. Modifies metadata, adds/removes deps, rules, or files.",
+      inputSchema: {
+        feature: z.string().describe("Feature slug of the contract to update"),
+        description: z.string().optional().describe("New description"),
+        status: z.string().optional().describe("New status: draft, active, or deprecated"),
+        owner: z.string().optional().describe("New owner"),
+        addDeps: z.string().optional().describe("Internal deps to add, comma-separated"),
+        removeDeps: z.string().optional().describe("Internal deps to remove, comma-separated"),
+        addRules: z.string().optional().describe("Rule IDs to add, comma-separated"),
+        removeRules: z.string().optional().describe("Rule IDs to remove, comma-separated"),
+        addFiles: z.string().optional().describe("File paths to add, comma-separated"),
+        removeFiles: z.string().optional().describe("File paths to remove, comma-separated"),
+      },
+    },
+    async (args) => {
+      const xml = await handleUpdate(args);
       return { content: [{ type: "text" as const, text: xml }] };
     }
   );

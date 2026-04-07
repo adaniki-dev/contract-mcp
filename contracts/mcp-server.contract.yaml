@@ -73,6 +73,11 @@ endpoints:
     input: "{ query: string }"
     output: "XML<SearchResults>"
     errors: [COMPILE_ERROR]
+  - tool: update
+    description: "Update an existing contract — metadata, deps, rules, or files"
+    input: "{ feature: string, description?: string, status?: string, owner?: string, addDeps?: string, removeDeps?: string, addRules?: string, removeRules?: string, addFiles?: string, removeFiles?: string }"
+    output: "XML with list of changes applied"
+    errors: [FEATURE_NOT_FOUND, PARSE_ERROR, INVALID_STATUS]
 
 types:
   - name: McpToolInput
@@ -137,3 +142,5 @@ files:
     purpose: "Handler do tool scaffold"
   - path: src/app/mcp-server/tools/search.ts
     purpose: "Handler do tool search"
+  - path: src/app/mcp-server/tools/update.ts
+    purpose: "Handler do tool update"
