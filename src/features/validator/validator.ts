@@ -53,15 +53,32 @@ function extractFeatureFromImport(source: string): string | null {
  * Check exports-match rule: barrel file exports must match contract declarations.
  */
 function findBarrelPath(contract: Contract, projectRoot: string): string {
-  // Look for an index.ts in the contract's declared files
+  // 1. Look for an index.ts in the contract's declared files
   const barrelFile = contract.files.find(
     (f) => f.path.endsWith("/index.ts") || f.path === "index.ts"
   );
   if (barrelFile) {
     return join(projectRoot, barrelFile.path);
   }
-  // Fallback to convention
-  return join(projectRoot, "src", "features", contract.contract.feature, "index.ts");
+
+  // 2. Search src/**/features/{name}/index.ts then src/**/{name}/index.ts
+  const feature = contract.contract.feature;
+  const patterns = [
+    `src/**/features/${feature}/index.ts`,
+    `src/**/${feature}/index.ts`,
+  ];
+
+  for (const pattern of patterns) {
+    const glob = new Bun.Glob(pattern);
+    for (const match of glob.scanSync({ cwd: projectRoot, absolute: true })) {
+      if (!match.includes("/node_modules/")) {
+        return match;
+      }
+    }
+  }
+
+  // 3. Last fallback
+  return join(projectRoot, "src", "features", feature, "index.ts");
 }
 
 async function checkExportsMatch(
