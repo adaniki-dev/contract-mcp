@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/protocol-MCP-8b5cf6?style=flat-square" alt="MCP" />
   <img src="https://img.shields.io/badge/contracts-YAML-cb171e?style=flat-square&logo=yaml" alt="YAML" />
   <img src="https://img.shields.io/badge/output-XML-f48024?style=flat-square" alt="XML" />
-  <img src="https://img.shields.io/badge/tools-9-3fb950?style=flat-square" alt="9 Tools" />
+  <img src="https://img.shields.io/badge/tools-10-3fb950?style=flat-square" alt="9 Tools" />
 </p>
 
 # MCP Contractor
@@ -81,6 +81,12 @@ AI agents working on large codebases often:
 |------|-------------|
 | `scaffold` | Generate a YAML contract template for a new feature (configurable `basePath`) |
 | `update` | Modify an existing contract (metadata, deps, rules, files) |
+
+### Onboarding
+
+| Tool | Description |
+|------|-------------|
+| `reference` | Get contract-driven development guide. Sections: `workflow`, `tools`, `rules`, `claude-md` |
 
 All responses are **token-optimized XML** -- compact, action-oriented, no redundancy.
 
@@ -199,7 +205,7 @@ Create `.mcp.json` in your project root:
 }
 ```
 
-Restart Claude Code. You'll see 9 new tools available. The dashboard opens automatically at **http://localhost:8000**.
+Restart Claude Code. You'll see 10 new tools available. The dashboard opens automatically at **http://localhost:8000**.
 
 ### Run Standalone
 
