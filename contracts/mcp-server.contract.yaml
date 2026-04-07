@@ -69,8 +69,8 @@ endpoints:
     output: "XML with YAML contract or save confirmation"
     errors: [INVALID_FEATURE_NAME, WRITE_ERROR]
   - tool: search
-    description: "Search contracts by keyword, returns compact results"
-    input: "{ query: string }"
+    description: "Search contracts with filters, returns compact results"
+    input: "{ query?: string, status?: string, dependsOn?: string, dependedBy?: string, owner?: string, hasRules?: string, hasViolations?: boolean }"
     output: "XML<SearchResults>"
     errors: [COMPILE_ERROR]
   - tool: update

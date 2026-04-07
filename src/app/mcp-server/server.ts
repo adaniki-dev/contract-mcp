@@ -140,9 +140,15 @@ export async function startServer(): Promise<void> {
   server.registerTool(
     "search",
     {
-      description: "Search contracts by keyword. Returns compact results — use get_feature for full details.",
+      description: "Search contracts with filters. Returns compact results — use get_feature for full details.",
       inputSchema: {
-        query: z.string().describe("Search term (matches feature name, description, deps, exports, rules, files)"),
+        query: z.string().optional().describe("Text search across all fields (name, description, deps, exports, rules, files)"),
+        status: z.string().optional().describe("Filter by status: draft, active, deprecated"),
+        dependsOn: z.string().optional().describe("Find features that depend on this feature"),
+        dependedBy: z.string().optional().describe("Find features that this feature depends on"),
+        owner: z.string().optional().describe("Filter by owner"),
+        hasRules: z.string().optional().describe("Find features with rules matching this ID"),
+        hasViolations: z.boolean().optional().describe("Filter by violation status (true = with violations, false = clean)"),
       },
     },
     async (args) => {
