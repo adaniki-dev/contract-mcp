@@ -78,6 +78,11 @@ endpoints:
     input: "{ feature: string, description?: string, status?: string, owner?: string, addDeps?: string, removeDeps?: string, addRules?: string, removeRules?: string, addFiles?: string, removeFiles?: string }"
     output: "XML with list of changes applied"
     errors: [FEATURE_NOT_FOUND, PARSE_ERROR, INVALID_STATUS]
+  - tool: reference
+    description: "Get contract-driven development reference guide for AI onboarding"
+    input: "{ section?: string }"
+    output: "XML with workflow, tools, rules, and CLAUDE.md section"
+    errors: []
 
 types:
   - name: McpToolInput
@@ -144,3 +149,5 @@ files:
     purpose: "Handler do tool search"
   - path: src/app/mcp-server/tools/update.ts
     purpose: "Handler do tool update"
+  - path: src/app/mcp-server/tools/reference.ts
+    purpose: "Handler do tool reference"

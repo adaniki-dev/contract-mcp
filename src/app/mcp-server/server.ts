@@ -10,6 +10,7 @@ import { handleDrift } from "./tools/drift";
 import { handleScaffold } from "./tools/scaffold";
 import { handleSearch } from "./tools/search";
 import { handleUpdate } from "./tools/update";
+import { handleReference } from "./tools/reference";
 import { startDashboard } from "@features/dashboard";
 
 export async function startServer(): Promise<void> {
@@ -176,6 +177,20 @@ export async function startServer(): Promise<void> {
     },
     async (args) => {
       const xml = await handleUpdate(args);
+      return { content: [{ type: "text" as const, text: xml }] };
+    }
+  );
+
+  server.registerTool(
+    "reference",
+    {
+      description: "Get the contract-driven development reference guide. Use to onboard AI agents or update CLAUDE.md with contract workflow instructions.",
+      inputSchema: {
+        section: z.string().optional().describe("Specific section: 'workflow', 'tools', 'rules', or 'claude-md'. Omit for full guide."),
+      },
+    },
+    async (args) => {
+      const xml = await handleReference(args);
       return { content: [{ type: "text" as const, text: xml }] };
     }
   );
