@@ -17,11 +17,11 @@ dependencies:
 exports:
   functions:
     - name: compileOne
-      signature: "(contractPath: string) => Result<Contract, CompileError[]>"
+      signature: "(contractPath: string) => Promise<Result<Contract, CompileError[]>>"
       description: "Compila um único contrato YAML e retorna o objeto tipado ou erros"
       pure: true
     - name: compileAll
-      signature: "(contractsDir: string) => Result<CompileResult, CompileError[]>"
+      signature: "(contractsDir?: string, projectRoot?: string) => Promise<Result<CompileResult, CompileError[]>>"
       description: "Compila todos os contratos de um diretório"
       pure: true
   types:

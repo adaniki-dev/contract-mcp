@@ -18,6 +18,10 @@ export {
   parseTypeScript,
   analyzeImports,
   analyzeExports,
+  extractSignatures,
+  normalizeSignature,
   type ImportInfo,
   type ExportInfo,
+  type SignatureResult,
+  type ReExportInfo,
 } from "./parsers";

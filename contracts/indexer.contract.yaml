@@ -16,11 +16,11 @@ dependencies:
 exports:
   functions:
     - name: buildIndex
-      signature: "(contractsDir: string) => Result<Index, IndexError>"
+      signature: "(contractsDir?: string, projectRoot?: string) => Promise<Result<Index, IndexError>>"
       description: "Escaneia todos os .contract.yaml e gera o índice"
       pure: true
     - name: detectDrift
-      signature: "(indexPath: string, contractsDir: string) => DriftReport"
+      signature: "(indexPath?: string, contractsDir?: string) => Promise<DriftReport>"
       description: "Compara índice existente com estado atual dos contratos"
       pure: true
   types:

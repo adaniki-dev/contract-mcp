@@ -4,6 +4,8 @@ import {
   initParsers,
   analyzeImports,
   analyzeExports,
+  extractSignatures,
+  normalizeSignature,
 } from "@shared/lib/parsers";
 import type {
   ValidationResult,
@@ -110,6 +112,94 @@ async function checkExportsMatch(
       violations.push({
         rule: "exports-match",
         message: `Function "${fn.name}" declared in contract but not exported from barrel`,
+        severity: "error",
+        file: barrelPath,
+      });
+    }
+  }
+
+  // Signature validation — extract actual signatures and compare with contract
+  const functionsWithSig = contract.exports.functions.filter(
+    (fn) => fn.signature && exportedNames.has(fn.name)
+  );
+
+  if (functionsWithSig.length > 0) {
+    const sigViolations = await checkSignatures(
+      functionsWithSig,
+      barrelPath,
+      barrelCode,
+      projectRoot
+    );
+    violations.push(...sigViolations);
+  }
+
+  return violations;
+}
+
+async function resolveSignatures(
+  barrelPath: string,
+  barrelCode: string,
+  projectRoot: string
+): Promise<Map<string, string>> {
+  const { signatures, reExports } = extractSignatures(barrelPath, barrelCode);
+
+  // Resolve re-exports by following the source files
+  for (const re of reExports) {
+    if (signatures.has(re.name)) continue; // Already have it directly
+
+    // Resolve source path relative to barrel
+    const barrelDir = join(barrelPath, "..");
+    const extensions = [".ts", ".tsx", ""];
+    let resolvedPath: string | null = null;
+
+    for (const ext of extensions) {
+      const candidate = join(barrelDir, re.source + ext);
+      if (await Bun.file(candidate).exists()) {
+        resolvedPath = candidate;
+        break;
+      }
+    }
+
+    if (!resolvedPath) continue;
+
+    const sourceCode = await readFileSafe(resolvedPath);
+    if (!sourceCode) continue;
+
+    const { signatures: sourceSigs } = extractSignatures(resolvedPath, sourceCode);
+    const sig = sourceSigs.get(re.name);
+    if (sig) {
+      signatures.set(re.name, sig);
+    }
+  }
+
+  return signatures;
+}
+
+async function checkSignatures(
+  functions: { name: string; signature: string }[],
+  barrelPath: string,
+  barrelCode: string,
+  projectRoot: string
+): Promise<Violation[]> {
+  const violations: Violation[] = [];
+
+  const actualSignatures = await resolveSignatures(
+    barrelPath,
+    barrelCode,
+    projectRoot
+  );
+
+  for (const fn of functions) {
+    const actualSig = actualSignatures.get(fn.name);
+    if (!actualSig) continue; // Can't extract — skip (don't false-positive)
+
+    const normalizedContract = normalizeSignature(fn.signature);
+    const normalizedActual = normalizeSignature(actualSig);
+
+    if (normalizedContract !== normalizedActual) {
+      violations.push({
+        rule: "signature-match",
+        message: `Function "${fn.name}" signature mismatch. Contract: "${normalizedContract}", Actual: "${normalizedActual}"`,
         severity: "error",
         file: barrelPath,
       });

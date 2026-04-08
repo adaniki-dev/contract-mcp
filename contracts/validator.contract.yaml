@@ -24,11 +24,11 @@ dependencies:
 exports:
   functions:
     - name: validate
-      signature: "(feature: string, projectRoot: string) => Result<ValidationResult, ValidationError>"
+      signature: "(feature: string, projectRoot: string) => Promise<Result<ValidationResult, ValidationError>>"
       description: "Valida o código de uma feature contra seu contrato"
       pure: true
     - name: validateAll
-      signature: "(projectRoot: string) => Result<ValidationResult[], ValidationError>"
+      signature: "(projectRoot: string) => Promise<Result<ValidationResult[], ValidationError>>"
       description: "Valida todas as features do projeto"
       pure: true
   types:
@@ -110,6 +110,10 @@ rules:
   - id: files-exist
     description: "Arquivos declarados no contrato devem existir no filesystem"
     severity: warning
+    testable: true
+  - id: signature-match
+    description: "Assinaturas das funções exportadas devem bater com o contrato (parâmetros e return type)"
+    severity: error
     testable: true
 
 files:

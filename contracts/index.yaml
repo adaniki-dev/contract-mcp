@@ -1,6 +1,6 @@
 version: 1.0.0
 project: zero-human
-updatedAt: 2026-04-07T23:53:00.686Z
+updatedAt: 2026-04-08T19:13:40.709Z
 contractsDir: /home/adan/workspace/zero-human/contracts
 features:
   - feature: dependency-graph
@@ -20,7 +20,7 @@ features:
       - contract-entity
       - dependency-graph
     exportsCount: 5
-    rulesCount: 5
+    rulesCount: 6
   - feature: contract-entity
     contractPath: contract-entity.contract.yaml
     status: draft

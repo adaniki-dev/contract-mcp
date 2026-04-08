@@ -354,6 +354,177 @@ describe("validator", () => {
       }
     });
 
+    test("signature-match: valid signature passes", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "val-sig-ok-"));
+      try {
+        const contract = `contract:
+  version: "1.0.0"
+  feature: auth
+  description: "Test auth"
+  owner: test
+  status: draft
+dependencies:
+  internal: []
+  external: []
+exports:
+  functions:
+    - name: login
+      signature: "(user: string, pass: string) => Promise<boolean>"
+      description: test
+      pure: true
+  types: []
+rules: []
+files: []
+`;
+        await createProject(dir, [
+          {
+            name: "auth",
+            contract,
+            barrel: "export async function login(user: string, pass: string): Promise<boolean> { return true; }\n",
+          },
+        ]);
+
+        const result = await validate("auth", dir);
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          const sigViolations = result.value.violations.filter((v) => v.rule === "signature-match");
+          expect(sigViolations).toHaveLength(0);
+        }
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    test("signature-match: param type mismatch is violation", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "val-sig-param-"));
+      try {
+        const contract = `contract:
+  version: "1.0.0"
+  feature: auth
+  description: "Test auth"
+  owner: test
+  status: draft
+dependencies:
+  internal: []
+  external: []
+exports:
+  functions:
+    - name: login
+      signature: "(userId: UUID) => Promise<boolean>"
+      description: test
+      pure: true
+  types: []
+rules: []
+files: []
+`;
+        await createProject(dir, [
+          {
+            name: "auth",
+            contract,
+            barrel: "export async function login(userId: string): Promise<boolean> { return true; }\n",
+          },
+        ]);
+
+        const result = await validate("auth", dir);
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          const sigViolations = result.value.violations.filter((v) => v.rule === "signature-match");
+          expect(sigViolations).toHaveLength(1);
+          expect(sigViolations[0].message).toContain("UUID");
+          expect(sigViolations[0].message).toContain("string");
+        }
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    test("signature-match: return type mismatch is violation", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "val-sig-ret-"));
+      try {
+        const contract = `contract:
+  version: "1.0.0"
+  feature: auth
+  description: "Test auth"
+  owner: test
+  status: draft
+dependencies:
+  internal: []
+  external: []
+exports:
+  functions:
+    - name: login
+      signature: "(user: string) => Promise<User>"
+      description: test
+      pure: true
+  types: []
+rules: []
+files: []
+`;
+        await createProject(dir, [
+          {
+            name: "auth",
+            contract,
+            barrel: "export async function login(user: string): Promise<boolean> { return true; }\n",
+          },
+        ]);
+
+        const result = await validate("auth", dir);
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          const sigViolations = result.value.violations.filter((v) => v.rule === "signature-match");
+          expect(sigViolations).toHaveLength(1);
+          expect(sigViolations[0].message).toContain("Promise<User>");
+          expect(sigViolations[0].message).toContain("Promise<boolean>");
+        }
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
+    test("signature-match: re-export resolves to source file", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "val-sig-reexport-"));
+      try {
+        const contract = `contract:
+  version: "1.0.0"
+  feature: auth
+  description: "Test auth"
+  owner: test
+  status: draft
+dependencies:
+  internal: []
+  external: []
+exports:
+  functions:
+    - name: login
+      signature: "(user: string) => Promise<boolean>"
+      description: test
+      pure: true
+  types: []
+rules: []
+files: []
+`;
+        await createProject(dir, [
+          {
+            name: "auth",
+            contract,
+            barrel: 'export { login } from "./auth";\n',
+            files: {
+              "src/features/auth/auth.ts": "export async function login(user: string): Promise<boolean> { return true; }\n",
+            },
+          },
+        ]);
+
+        const result = await validate("auth", dir);
+        expect(result.ok).toBe(true);
+        if (result.ok) {
+          const sigViolations = result.value.violations.filter((v) => v.rule === "signature-match");
+          expect(sigViolations).toHaveLength(0);
+        }
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    });
+
     test("files-exist: declared files must exist in filesystem", async () => {
       const dir = await mkdtemp(join(tmpdir(), "val-files-"));
       try {
