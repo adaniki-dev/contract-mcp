@@ -1,0 +1,100 @@
+contract:
+  version: "1.0.0"
+  feature: check-commit
+  description: "Pre-commit validation: checks only features affected by staged changes"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal:
+    - feature: compiler
+      reason: "Compila todos os contratos para match contra arquivos staged"
+    - feature: validator
+      reason: "Valida as features afetadas pelos arquivos staged"
+    - feature: indexer
+      reason: "Drift check como warning não-bloqueante"
+  external: []
+
+exports:
+  functions:
+    - name: checkCommit
+      signature: "(projectRoot: string) => Promise<Result<CheckCommitResult, CheckCommitError>>"
+      description: "Executa validação cirúrgica sobre features afetadas por arquivos staged"
+      pure: false
+  types:
+    - name: CheckCommitResult
+      description: "Resultado agregado da validação pre-commit"
+    - name: AffectedFeature
+      description: "Feature afetada pelos arquivos staged"
+    - name: CheckCommitError
+      description: "Erro durante check-commit (git, compile, etc.)"
+
+types:
+  - name: CheckCommitResult
+    description: "Resultado da validação pre-commit"
+    fields:
+      - name: stagedFiles
+        type: "string[]"
+        required: true
+        description: "Arquivos no stage do git"
+      - name: affectedFeatures
+        type: "AffectedFeature[]"
+        required: true
+        description: "Features que os arquivos staged tocam"
+      - name: validationResults
+        type: "ValidationResult[]"
+        required: true
+        description: "Resultado da validação por feature afetada"
+      - name: driftReport
+        type: DriftReport
+        required: true
+        description: "Relatório de drift do índice (não-bloqueante)"
+      - name: passed
+        type: boolean
+        required: true
+        description: "true se não há violations de severity error"
+      - name: errorCount
+        type: number
+        required: true
+        description: "Total de violations de severity error"
+      - name: warningCount
+        type: number
+        required: true
+        description: "Total de violations de severity warning"
+  - name: AffectedFeature
+    description: "Feature impactada por arquivos staged"
+    fields:
+      - name: feature
+        type: string
+        required: true
+        description: "Slug da feature"
+      - name: stagedFiles
+        type: "string[]"
+        required: true
+        description: "Arquivos staged que tocaram essa feature"
+
+rules:
+  - id: git-required
+    description: "Retorna erro se não estiver num git repo válido"
+    severity: error
+    testable: true
+  - id: only-affected
+    description: "Valida apenas features cujos arquivos estão staged, não o projeto todo"
+    severity: error
+    testable: true
+  - id: drift-non-blocking
+    description: "Drift é warning, não bloqueia o commit"
+    severity: warning
+    testable: true
+  - id: no-contract-no-check
+    description: "Arquivos staged sem contrato associado são ignorados silenciosamente"
+    severity: info
+    testable: true
+
+files:
+  - path: src/features/check-commit/index.ts
+    purpose: "Barrel export público"
+  - path: src/features/check-commit/check-commit.ts
+    purpose: "Lógica core de check-commit"
+  - path: src/features/check-commit/check-commit.test.ts
+    purpose: "Testes do check-commit"

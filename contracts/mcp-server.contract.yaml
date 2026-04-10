@@ -15,6 +15,8 @@ dependencies:
       reason: "Tool index usa o indexer"
     - feature: dashboard
       reason: "Inicia dashboard web junto com o MCP server"
+    - feature: check-commit
+      reason: "Tools check_commit e install_hook usam a lógica de check-commit"
   external:
     - package: "@modelcontextprotocol/sdk"
       version: "^1.12.1"
@@ -88,6 +90,16 @@ endpoints:
     input: "{ feature: string, direction?: string }"
     output: "XML<BlastRadius>"
     errors: [COMPILE_ERROR, FEATURE_NOT_FOUND]
+  - tool: check_commit
+    description: "Validate staged changes before commit (cirúrgica, só features afetadas)"
+    input: "{ projectRoot?: string }"
+    output: "XML<CheckCommitResult>"
+    errors: [NOT_A_GIT_REPO, GIT_ERROR, COMPILE_ERROR]
+  - tool: install_hook
+    description: "Install a git pre-commit hook that calls check-commit"
+    input: "{ projectRoot?: string, force?: boolean }"
+    output: "XML with hook path and cli path"
+    errors: [NOT_A_GIT_REPO, HOOK_EXISTS]
 
 types:
   - name: McpToolInput
@@ -158,3 +170,9 @@ files:
     purpose: "Handler do tool reference"
   - path: src/app/mcp-server/tools/blast-radius.ts
     purpose: "Handler do tool blast_radius"
+  - path: src/app/mcp-server/tools/check-commit.ts
+    purpose: "Handler do tool check_commit"
+  - path: src/app/mcp-server/tools/install-hook.ts
+    purpose: "Handler do tool install_hook"
+  - path: src/app/cli/check-commit.ts
+    purpose: "CLI standalone invocado pelo git pre-commit hook"

@@ -189,6 +189,27 @@ export interface BlastRadiusError {
   message: string;
 }
 
+// Check Commit types
+export interface AffectedFeature {
+  feature: string;
+  stagedFiles: string[];
+}
+
+export interface CheckCommitResult {
+  stagedFiles: string[];
+  affectedFeatures: AffectedFeature[];
+  validationResults: ValidationResult[];
+  driftReport: DriftReport;
+  passed: boolean;
+  errorCount: number;
+  warningCount: number;
+}
+
+export interface CheckCommitError {
+  code: "NOT_A_GIT_REPO" | "GIT_ERROR" | "COMPILE_ERROR" | "INTERNAL_ERROR";
+  message: string;
+}
+
 // Dashboard types
 export interface DashboardData {
   project: string;

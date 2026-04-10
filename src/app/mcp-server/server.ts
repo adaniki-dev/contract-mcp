@@ -12,6 +12,8 @@ import { handleSearch } from "./tools/search";
 import { handleUpdate } from "./tools/update";
 import { handleReference } from "./tools/reference";
 import { handleBlastRadius } from "./tools/blast-radius";
+import { handleCheckCommit } from "./tools/check-commit";
+import { handleInstallHook } from "./tools/install-hook";
 import { startDashboard } from "@features/dashboard";
 
 export async function startServer(): Promise<void> {
@@ -207,6 +209,35 @@ export async function startServer(): Promise<void> {
     },
     async (args) => {
       const xml = await handleBlastRadius(args);
+      return { content: [{ type: "text" as const, text: xml }] };
+    }
+  );
+
+  server.registerTool(
+    "check_commit",
+    {
+      description: "Validate staged changes before commit. Runs cirúrgica validation only on features affected by staged files. Shift-left: catch violations before commit.",
+      inputSchema: {
+        projectRoot: z.string().optional().describe("Project root path (default: cwd)"),
+      },
+    },
+    async (args) => {
+      const xml = await handleCheckCommit(args);
+      return { content: [{ type: "text" as const, text: xml }] };
+    }
+  );
+
+  server.registerTool(
+    "install_hook",
+    {
+      description: "Install a git pre-commit hook that blocks commits with contract violations",
+      inputSchema: {
+        projectRoot: z.string().optional().describe("Target project root (default: cwd)"),
+        force: z.boolean().optional().describe("Overwrite existing pre-commit hook"),
+      },
+    },
+    async (args) => {
+      const xml = await handleInstallHook(args);
       return { content: [{ type: "text" as const, text: xml }] };
     }
   );

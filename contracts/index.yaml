@@ -1,6 +1,6 @@
 version: 1.0.0
 project: contract-mcp
-updatedAt: 2026-04-10T22:43:38.329Z
+updatedAt: 2026-04-10T23:24:51.257Z
 contractsDir: /home/adan/workspace/zero-human/contracts
 features:
   - feature: dependency-graph
@@ -37,7 +37,18 @@ features:
       - validator
       - indexer
       - dashboard
+      - check-commit
     exportsCount: 3
+    rulesCount: 4
+  - feature: check-commit
+    contractPath: check-commit.contract.yaml
+    status: draft
+    description: "Pre-commit validation: checks only features affected by staged changes"
+    dependsOn:
+      - compiler
+      - validator
+      - indexer
+    exportsCount: 4
     rulesCount: 4
   - feature: compiler
     contractPath: compiler.contract.yaml

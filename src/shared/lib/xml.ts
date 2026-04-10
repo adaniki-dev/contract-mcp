@@ -5,6 +5,7 @@ import type {
   Index,
   DriftReport,
   BlastRadius,
+  CheckCommitResult,
 } from "@shared/types/contract.types";
 
 // === Core XML primitives ===
@@ -160,6 +161,37 @@ export function formatIndex(index: Index): string {
   return `<index version="${index.version}" project="${escapeXml(index.project)}" features="${index.features.length}" updated="${index.updatedAt}">
 ${entries}
 </index>`;
+}
+
+export function formatCheckCommitResult(result: CheckCommitResult): string {
+  const affected = result.affectedFeatures
+    .map((af) => `<affected feature="${escapeXml(af.feature)}" files="${af.stagedFiles.length}" />`)
+    .join("\n");
+
+  const validations = result.validationResults
+    .map((vr) => {
+      if (vr.violations.length === 0) {
+        return `<validation feature="${escapeXml(vr.feature)}" valid="true" violations="0" />`;
+      }
+      const viols = vr.violations
+        .map(
+          (v) =>
+            `<violation rule="${escapeXml(v.rule)}" severity="${v.severity}"${v.file ? ` file="${escapeXml(v.file)}"` : ""}>${escapeXml(v.message)}</violation>`
+        )
+        .join("\n");
+      return `<validation feature="${escapeXml(vr.feature)}" valid="${vr.valid}" violations="${vr.violations.length}">\n${viols}\n</validation>`;
+    })
+    .join("\n");
+
+  const drift = result.driftReport.hasDrift
+    ? `<drift hasDrift="true" orphaned="${result.driftReport.orphanedContracts.length}" missing="${result.driftReport.missingContracts.length}" outdated="${result.driftReport.outdatedEntries.length}" />`
+    : `<drift hasDrift="false" />`;
+
+  return `<check-commit passed="${result.passed}" errors="${result.errorCount}" warnings="${result.warningCount}" stagedFiles="${result.stagedFiles.length}" affectedFeatures="${result.affectedFeatures.length}">
+${affected}
+${validations}
+${drift}
+</check-commit>`;
 }
 
 export function formatBlastRadius(radius: BlastRadius): string {

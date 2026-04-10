@@ -13,6 +13,7 @@ export {
   formatIndex,
   formatDriftReport,
   formatBlastRadius,
+  formatCheckCommitResult,
 } from "./xml";
 export {
   initParsers,
