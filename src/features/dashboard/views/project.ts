@@ -1,7 +1,8 @@
 import type { Contract } from "@shared/types/contract.types";
 
-function escapeHtml(str: string): string {
-  return str
+function escapeHtml(str: string | undefined | null): string {
+  if (str === undefined || str === null) return "";
+  return String(str)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")

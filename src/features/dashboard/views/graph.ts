@@ -19,13 +19,18 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   return `
 <style>
   .graph-container {
-    position: relative;
-    width: 100%;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
     height: calc(100vh - 56px);
-    margin: -72px -1.5rem -2rem;
     padding: 0;
+    margin: 0;
     overflow: hidden;
     background: #0d1117;
+    z-index: 1;
   }
 
   .graph-container canvas {
@@ -33,10 +38,21 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     width: 100%;
     height: 100%;
     cursor: grab;
+    touch-action: none;
   }
 
   .graph-container canvas.dragging {
     cursor: grabbing;
+  }
+
+  .graph-hint {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    color: #484f58;
+    font-size: 0.75rem;
+    pointer-events: none;
+    font-family: ui-monospace, monospace;
   }
 
   .graph-tooltip {
@@ -104,6 +120,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
 <div class="graph-container">
   <canvas id="graph-canvas"></canvas>
   <div class="graph-tooltip" id="graph-tooltip"></div>
+  <div class="graph-hint">drag nodes · wheel to zoom · middle-click drag to pan · click node to open</div>
 </div>
 
 <script>
@@ -194,6 +211,22 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   var hoveredNode = null;
   var hoveredEdge = null;
   var dragNode = null;
+  var dragStart = null;
+  var clickStart = null;
+
+  // Viewport transform (pan + zoom)
+  var viewScale = 1;
+  var viewX = 0;
+  var viewY = 0;
+  var panning = false;
+  var panStart = null;
+
+  function screenToWorld(sx, sy) {
+    return {
+      x: (sx - viewX) / viewScale,
+      y: (sy - viewY) / viewScale
+    };
+  }
 
   function simulate() {
     var c = centerXY();
@@ -376,10 +409,16 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     var rect = canvas.getBoundingClientRect();
     var w = rect.width;
     var h = rect.height;
+    var dpr = window.devicePixelRatio || 1;
 
+    // Reset to identity for background fill
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     ctx.fillStyle = "#0d1117";
     ctx.fillRect(0, 0, w, h);
+
+    // Apply viewport transform (pan + zoom) on top of DPR
+    ctx.setTransform(dpr * viewScale, 0, 0, dpr * viewScale, dpr * viewX, dpr * viewY);
 
     var highlightSet = null;
     if (hoveredNode) {
@@ -493,30 +532,44 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     tooltip.classList.remove("visible");
   }
 
-  function getMousePos(ev) {
+  function getScreenPos(ev) {
     var rect = canvas.getBoundingClientRect();
     return { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
   }
 
-  canvas.addEventListener("mousemove", function (ev) {
-    var pos = getMousePos(ev);
+  function getWorldPos(ev) {
+    var s = getScreenPos(ev);
+    return screenToWorld(s.x, s.y);
+  }
 
+  canvas.addEventListener("mousemove", function (ev) {
+    var screen = getScreenPos(ev);
+    var world = screenToWorld(screen.x, screen.y);
+
+    // Panning
+    if (panning && panStart) {
+      viewX += screen.x - panStart.x;
+      viewY += screen.y - panStart.y;
+      panStart = screen;
+      return;
+    }
+
+    // Dragging a node
     if (dragNode) {
-      dragNode.x = pos.x;
-      dragNode.y = pos.y;
+      dragNode.x = world.x;
+      dragNode.y = world.y;
       dragNode.vx = 0;
       dragNode.vy = 0;
       settled = false;
       return;
     }
 
-    var n = nodeAt(pos.x, pos.y);
-    var e = n ? null : edgeAt(pos.x, pos.y);
+    var n = nodeAt(world.x, world.y);
+    var e = n ? null : edgeAt(world.x, world.y);
 
     if (n !== hoveredNode || e !== hoveredEdge) {
       hoveredNode = n;
       hoveredEdge = e;
-      if (!settled) return;
     }
 
     if (n) {
@@ -532,28 +585,63 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   });
 
   canvas.addEventListener("mousedown", function (ev) {
-    var pos = getMousePos(ev);
-    var n = nodeAt(pos.x, pos.y);
+    ev.preventDefault();
+    var screen = getScreenPos(ev);
+    var world = screenToWorld(screen.x, screen.y);
+
+    // Middle click or shift+left click = pan
+    if (ev.button === 1 || (ev.button === 0 && ev.shiftKey)) {
+      panning = true;
+      panStart = screen;
+      canvas.style.cursor = "grabbing";
+      return;
+    }
+
+    if (ev.button !== 0) return;
+
+    var n = nodeAt(world.x, world.y);
     if (n) {
       dragNode = n;
       n.pinned = true;
       canvas.classList.add("dragging");
       hideTooltip();
       settled = false;
+      clickStart = { x: ev.clientX, y: ev.clientY, time: Date.now() };
+    } else {
+      // Left click on empty space also pans
+      panning = true;
+      panStart = screen;
+      canvas.style.cursor = "grabbing";
     }
   });
 
   canvas.addEventListener("mouseup", function (ev) {
+    if (panning) {
+      panning = false;
+      panStart = null;
+      canvas.style.cursor = "grab";
+      return;
+    }
+
     if (dragNode) {
       dragNode.pinned = false;
       canvas.classList.remove("dragging");
 
-      var pos = getMousePos(ev);
-      var n = nodeAt(pos.x, pos.y);
-      if (n === dragNode && Math.abs(dragNode.vx) < 1 && Math.abs(dragNode.vy) < 1) {
+      // Detect click: small movement and short duration
+      var isClick = false;
+      if (clickStart) {
+        var dxClick = Math.abs(ev.clientX - clickStart.x);
+        var dyClick = Math.abs(ev.clientY - clickStart.y);
+        var dtClick = Date.now() - clickStart.time;
+        isClick = dxClick < 4 && dyClick < 4 && dtClick < 300;
+      }
+
+      if (isClick) {
         window.location.href = "/project?feature=" + encodeURIComponent(dragNode.id);
       }
+
       dragNode = null;
+      clickStart = null;
     }
   });
 
@@ -566,6 +654,30 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       dragNode = null;
       canvas.classList.remove("dragging");
     }
+    panning = false;
+    panStart = null;
+    clickStart = null;
+  });
+
+  canvas.addEventListener("wheel", function (ev) {
+    ev.preventDefault();
+    var screen = getScreenPos(ev);
+    var worldBefore = screenToWorld(screen.x, screen.y);
+
+    var delta = -ev.deltaY;
+    var factor = delta > 0 ? 1.1 : 1 / 1.1;
+    var newScale = viewScale * factor;
+    newScale = Math.max(0.2, Math.min(3, newScale));
+    viewScale = newScale;
+
+    // Adjust viewX/viewY so the point under the cursor stays fixed
+    var worldAfter = screenToWorld(screen.x, screen.y);
+    viewX += (worldAfter.x - worldBefore.x) * viewScale;
+    viewY += (worldAfter.y - worldBefore.y) * viewScale;
+  }, { passive: false });
+
+  canvas.addEventListener("contextmenu", function (ev) {
+    ev.preventDefault();
   });
 
   function tick() {

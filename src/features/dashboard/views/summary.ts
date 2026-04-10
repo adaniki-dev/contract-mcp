@@ -4,8 +4,9 @@ import type {
   Violation,
 } from "@shared/types/contract.types";
 
-function escapeHtml(text: string): string {
-  return text
+function escapeHtml(text: string | undefined | null): string {
+  if (text === undefined || text === null) return "";
+  return String(text)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
