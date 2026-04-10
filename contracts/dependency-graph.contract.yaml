@@ -37,6 +37,10 @@ rules:
     description: "getTransitiveDeps() deve resolver toda a cadeia de dependências"
     severity: error
     testable: true
+  - id: blast-radius-levels
+    description: "getBlastRadiusLevels() deve retornar features agrupadas por profundidade usando BFS"
+    severity: error
+    testable: true
 
 files:
   - path: src/entities/dependency-graph/index.ts

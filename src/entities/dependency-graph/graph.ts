@@ -97,4 +97,81 @@ export class DependencyGraph {
   getFeatures(): string[] {
     return [...this.adjacency.keys()];
   }
+
+  /**
+   * Direct dependents: features that directly depend on the given feature.
+   */
+  getDependents(feature: string): string[] {
+    const dependents: string[] = [];
+    for (const [candidate, deps] of this.adjacency) {
+      if (deps.includes(feature)) {
+        dependents.push(candidate);
+      }
+    }
+    return dependents;
+  }
+
+  /**
+   * Transitive dependents: all features that directly or indirectly depend on the given feature.
+   */
+  getTransitiveDependents(feature: string): string[] {
+    const visited = new Set<string>();
+    const queue = [...this.getDependents(feature)];
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      queue.push(...this.getDependents(current));
+    }
+
+    return [...visited];
+  }
+
+  /**
+   * BFS that returns features grouped by depth level.
+   * Direction "upstream" returns dependents (impact propagation).
+   * Direction "downstream" returns dependencies (what this feature needs).
+   */
+  getBlastRadiusLevels(
+    feature: string,
+    direction: "upstream" | "downstream"
+  ): Map<number, string[]> {
+    const levels = new Map<number, string[]>();
+    const visited = new Set<string>();
+    visited.add(feature);
+
+    const getNext = direction === "upstream"
+      ? (f: string) => this.getDependents(f)
+      : (f: string) => this.getDependencies(f);
+
+    let current = getNext(feature).filter((f) => !visited.has(f));
+    let depth = 1;
+
+    while (current.length > 0) {
+      const unique: string[] = [];
+      for (const f of current) {
+        if (!visited.has(f)) {
+          visited.add(f);
+          unique.push(f);
+        }
+      }
+
+      if (unique.length === 0) break;
+
+      levels.set(depth, unique);
+
+      const next: string[] = [];
+      for (const f of unique) {
+        next.push(...getNext(f));
+      }
+      current = next;
+      depth++;
+
+      // Safety cap to prevent runaway graphs
+      if (depth > 20) break;
+    }
+
+    return levels;
+  }
 }

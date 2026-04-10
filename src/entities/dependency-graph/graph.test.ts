@@ -102,4 +102,72 @@ describe("dependency graph", () => {
     expect(graph.getDepth("b")).toBe(1);
     expect(graph.getDepth("c")).toBe(0);
   });
+
+  test("getDependents returns direct dependents", () => {
+    const contracts = [
+      makeContract("core"),
+      makeContract("auth", ["core"]),
+      makeContract("users", ["core"]),
+      makeContract("unrelated"),
+    ];
+
+    const graph = DependencyGraph.fromContracts(contracts);
+    const dependents = graph.getDependents("core").sort();
+
+    expect(dependents).toEqual(["auth", "users"]);
+    expect(graph.getDependents("unrelated")).toEqual([]);
+  });
+
+  test("getTransitiveDependents walks up the chain", () => {
+    const contracts = [
+      makeContract("base"),
+      makeContract("middle", ["base"]),
+      makeContract("top", ["middle"]),
+    ];
+
+    const graph = DependencyGraph.fromContracts(contracts);
+    const transitive = graph.getTransitiveDependents("base").sort();
+
+    expect(transitive).toEqual(["middle", "top"]);
+  });
+
+  test("getBlastRadiusLevels groups upstream by depth", () => {
+    const contracts = [
+      makeContract("base"),
+      makeContract("middle", ["base"]),
+      makeContract("top1", ["middle"]),
+      makeContract("top2", ["middle"]),
+    ];
+
+    const graph = DependencyGraph.fromContracts(contracts);
+    const levels = graph.getBlastRadiusLevels("base", "upstream");
+
+    expect(levels.get(1)).toEqual(["middle"]);
+    expect(levels.get(2)?.sort()).toEqual(["top1", "top2"]);
+  });
+
+  test("getBlastRadiusLevels groups downstream by depth", () => {
+    const contracts = [
+      makeContract("base"),
+      makeContract("middle", ["base"]),
+      makeContract("top", ["middle"]),
+    ];
+
+    const graph = DependencyGraph.fromContracts(contracts);
+    const levels = graph.getBlastRadiusLevels("top", "downstream");
+
+    expect(levels.get(1)).toEqual(["middle"]);
+    expect(levels.get(2)).toEqual(["base"]);
+  });
+
+  test("getBlastRadiusLevels returns empty map for isolated feature", () => {
+    const contracts = [makeContract("isolated"), makeContract("other")];
+    const graph = DependencyGraph.fromContracts(contracts);
+
+    const upstream = graph.getBlastRadiusLevels("isolated", "upstream");
+    const downstream = graph.getBlastRadiusLevels("isolated", "downstream");
+
+    expect(upstream.size).toBe(0);
+    expect(downstream.size).toBe(0);
+  });
 });

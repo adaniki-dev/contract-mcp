@@ -159,6 +159,36 @@ export interface DriftReport {
   hasDrift: boolean;
 }
 
+// Blast Radius types
+export type BlastDirection = "upstream" | "downstream";
+export type RiskLevel = "low" | "medium" | "high";
+
+export interface BlastRadiusFeature {
+  feature: string;
+  status: ContractStatus;
+  rulesCount: number;
+  dependenciesCount: number;
+  critical: boolean;
+}
+
+export interface BlastRadiusLevel {
+  depth: number;
+  features: BlastRadiusFeature[];
+}
+
+export interface BlastRadius {
+  feature: string;
+  direction: BlastDirection;
+  totalAffected: number;
+  riskScore: number;
+  risk: RiskLevel;
+  levels: BlastRadiusLevel[];
+}
+
+export interface BlastRadiusError {
+  message: string;
+}
+
 // Dashboard types
 export interface DashboardData {
   project: string;

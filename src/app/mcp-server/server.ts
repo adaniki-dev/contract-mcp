@@ -11,6 +11,7 @@ import { handleScaffold } from "./tools/scaffold";
 import { handleSearch } from "./tools/search";
 import { handleUpdate } from "./tools/update";
 import { handleReference } from "./tools/reference";
+import { handleBlastRadius } from "./tools/blast-radius";
 import { startDashboard } from "@features/dashboard";
 
 export async function startServer(): Promise<void> {
@@ -191,6 +192,21 @@ export async function startServer(): Promise<void> {
     },
     async (args) => {
       const xml = await handleReference(args);
+      return { content: [{ type: "text" as const, text: xml }] };
+    }
+  );
+
+  server.registerTool(
+    "blast_radius",
+    {
+      description: "Calculate the impact radius of changing a feature. Shows affected features grouped by depth with risk scoring.",
+      inputSchema: {
+        feature: z.string().describe("Feature slug to analyze"),
+        direction: z.string().optional().describe("'upstream' (who depends on this, default) or 'downstream' (what this depends on)"),
+      },
+    },
+    async (args) => {
+      const xml = await handleBlastRadius(args);
       return { content: [{ type: "text" as const, text: xml }] };
     }
   );

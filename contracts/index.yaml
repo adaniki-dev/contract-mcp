@@ -1,6 +1,6 @@
 version: 1.0.0
 project: contract-mcp
-updatedAt: 2026-04-10T14:42:27.935Z
+updatedAt: 2026-04-10T22:43:38.329Z
 contractsDir: /home/adan/workspace/zero-human/contracts
 features:
   - feature: dependency-graph
@@ -10,7 +10,7 @@ features:
       dos contratos
     dependsOn: []
     exportsCount: 1
-    rulesCount: 3
+    rulesCount: 4
   - feature: validator
     contractPath: validator.contract.yaml
     status: draft

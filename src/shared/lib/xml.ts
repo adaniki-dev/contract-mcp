@@ -4,6 +4,7 @@ import type {
   ValidationResult,
   Index,
   DriftReport,
+  BlastRadius,
 } from "@shared/types/contract.types";
 
 // === Core XML primitives ===
@@ -159,6 +160,28 @@ export function formatIndex(index: Index): string {
   return `<index version="${index.version}" project="${escapeXml(index.project)}" features="${index.features.length}" updated="${index.updatedAt}">
 ${entries}
 </index>`;
+}
+
+export function formatBlastRadius(radius: BlastRadius): string {
+  if (radius.levels.length === 0) {
+    return `<blast-radius feature="${escapeXml(radius.feature)}" direction="${radius.direction}" risk="${radius.risk}" score="${radius.riskScore}" affected="0" />`;
+  }
+
+  const levelsXml = radius.levels
+    .map((level) => {
+      const features = level.features
+        .map((f) => {
+          const criticalAttr = f.critical ? ` critical="true"` : "";
+          return `<feature name="${escapeXml(f.feature)}" status="${f.status}" rules="${f.rulesCount}" deps="${f.dependenciesCount}"${criticalAttr} />`;
+        })
+        .join("\n");
+      return `<level depth="${level.depth}" count="${level.features.length}">\n${features}\n</level>`;
+    })
+    .join("\n");
+
+  return `<blast-radius feature="${escapeXml(radius.feature)}" direction="${radius.direction}" risk="${radius.risk}" score="${radius.riskScore}" affected="${radius.totalAffected}">
+${levelsXml}
+</blast-radius>`;
 }
 
 export function formatDriftReport(report: DriftReport): string {
