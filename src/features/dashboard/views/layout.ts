@@ -19,7 +19,7 @@ export function renderLayout(activeTab: string, content: string): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>zero-human Dashboard</title>
+  <title>contract-mcp Dashboard</title>
   <style>
     /* Reset */
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -220,7 +220,7 @@ export function renderLayout(activeTab: string, content: string): string {
 </head>
 <body>
   <nav class="topbar">
-    <div class="logo">zero-human</div>
+    <div class="logo">contract-mcp</div>
     <div class="tabs">
       ${tabsHtml}
     </div>
@@ -229,7 +229,7 @@ export function renderLayout(activeTab: string, content: string): string {
     ${content}
   </main>
   <div class="footer">
-    Updated: ${timestamp} &mdash; zero-human MCP Contract Linter
+    Updated: ${timestamp} &mdash; contract-mcp · MCP Contract Linter
   </div>
 </body>
 </html>`;

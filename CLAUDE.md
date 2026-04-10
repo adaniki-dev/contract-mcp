@@ -1,4 +1,4 @@
-# zero-human
+# contract-mcp
 
 MCP server que funciona como linter de contratos para AI. Agentes AI usam o MCP ao invés de `ls`/`path` para entender projetos através de contratos YAML estruturados.
 

@@ -58,7 +58,7 @@ function buildDashboardData(
   });
 
   return {
-    project: "zero-human",
+    project: "contract-mcp",
     totalFeatures: contracts.length,
     totalRules,
     totalViolations,

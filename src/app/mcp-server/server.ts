@@ -15,7 +15,7 @@ import { startDashboard } from "@features/dashboard";
 
 export async function startServer(): Promise<void> {
   const server = new McpServer({
-    name: "zero-human",
+    name: "contract-mcp",
     version: "0.1.0",
   });
 
@@ -199,7 +199,7 @@ export async function startServer(): Promise<void> {
   const dashResult = await startDashboard(process.cwd());
   if (dashResult.ok) {
     // Log to stderr so it doesn't interfere with stdio transport
-    console.error(`[zero-human] Dashboard: ${dashResult.value.url}`);
+    console.error(`[contract-mcp] Dashboard: ${dashResult.value.url}`);
   }
 
   const transport = new StdioServerTransport();

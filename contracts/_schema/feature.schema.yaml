@@ -1,4 +1,4 @@
-# Schema para contratos de feature do zero-human
+# Schema para contratos de feature do contract-mcp
 # Cada feature do projeto deve ter um .contract.yaml seguindo esta estrutura
 
 contract:
@@ -10,7 +10,7 @@ contract:
     enum: [draft, active, deprecated]
 
 dependencies:
-  internal:               # features do zero-human que esta feature depende
+  internal:               # features do contract-mcp que esta feature depende
     - feature: string     # slug da feature
       reason: string      # por que essa dependência existe
   external:               # pacotes npm

@@ -196,10 +196,10 @@ Create `.mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "zero-human": {
+    "contract-mcp": {
       "command": "bun",
       "args": ["run", "src/app/index.ts"],
-      "cwd": "/path/to/zero-human"
+      "cwd": "/path/to/contract-mcp"
     }
   }
 }
@@ -276,12 +276,12 @@ Responses are optimized for token efficiency:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<zero-human tool="search" status="success">
+<contract-mcp tool="search" status="success">
 <results dependsOn="compiler" count="4">
 <match feature="validator" status="draft" owner="adam" deps="compiler,contract-entity,dependency-graph" exports="validate,validateAll" rules="5">Verifica se o codigo corresponde aos contratos</match>
 <match feature="dashboard" status="draft" owner="adam" deps="compiler,validator,indexer" exports="startDashboard,renderDashboard,renderHtml" rules="4">Web dashboard humanizado</match>
 </results>
-</zero-human>
+</contract-mcp>
 ```
 
 One line per result. Attributes for data, text content for descriptions. Maximum information, minimum tokens.

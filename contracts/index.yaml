@@ -1,6 +1,6 @@
 version: 1.0.0
-project: zero-human
-updatedAt: 2026-04-08T19:13:40.709Z
+project: contract-mcp
+updatedAt: 2026-04-10T14:42:27.935Z
 contractsDir: /home/adan/workspace/zero-human/contracts
 features:
   - feature: dependency-graph

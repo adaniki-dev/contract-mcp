@@ -40,14 +40,14 @@ export function xmlDocument(rootContent: string): string {
 
 export function xmlSuccess(tool: string, content: string): string {
   return xmlDocument(
-    xmlElement("zero-human", { tool, status: "success" }, `\n${content}\n`)
+    xmlElement("contract-mcp", { tool, status: "success" }, `\n${content}\n`)
   );
 }
 
 export function xmlError(tool: string, code: string, message: string): string {
   return xmlDocument(
     xmlElement(
-      "zero-human",
+      "contract-mcp",
       { tool, status: "error" },
       `\n${xmlElement("error", { code }, escapeXml(message))}\n`
     )

@@ -49,7 +49,7 @@ export async function buildIndex(
 
   const index: Index = {
     version: "1.0.0",
-    project: "zero-human",
+    project: "contract-mcp",
     updatedAt: new Date().toISOString(),
     contractsDir: dir,
     features: entries,

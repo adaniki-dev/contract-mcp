@@ -1,5 +1,5 @@
 {
-  "name": "zero-human",
+  "name": "contract-mcp",
   "version": "0.1.0",
   "type": "module",
   "main": "src/app/index.ts",

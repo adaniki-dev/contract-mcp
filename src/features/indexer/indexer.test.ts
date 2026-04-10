@@ -81,7 +81,7 @@ describe("indexer", () => {
       if (result.ok) {
         expect(result.value.features).toHaveLength(3);
         expect(result.value.version).toBe("1.0.0");
-        expect(result.value.project).toBe("zero-human");
+        expect(result.value.project).toBe("contract-mcp");
         expect(result.value.contractsDir).toBe(dir);
         const featureNames = result.value.features.map((f) => f.feature).sort();
         expect(featureNames).toEqual(["alpha", "beta", "gamma"]);
@@ -136,7 +136,7 @@ describe("indexer", () => {
       // Index only has one feature
       const existingIndex: Index = {
         version: "1.0.0",
-        project: "zero-human",
+        project: "contract-mcp",
         updatedAt: new Date().toISOString(),
         contractsDir: dir,
         features: [
@@ -168,7 +168,7 @@ describe("indexer", () => {
       // Index references a feature that no longer has a contract file
       const existingIndex: Index = {
         version: "1.0.0",
-        project: "zero-human",
+        project: "contract-mcp",
         updatedAt: new Date().toISOString(),
         contractsDir: dir,
         features: [
@@ -209,7 +209,7 @@ describe("indexer", () => {
       // Index has old metadata
       const existingIndex: Index = {
         version: "1.0.0",
-        project: "zero-human",
+        project: "contract-mcp",
         updatedAt: new Date().toISOString(),
         contractsDir: dir,
         features: [
@@ -262,7 +262,7 @@ describe("indexer", () => {
       // Index only has feat-a
       const partialIndex: Index = {
         version: "1.0.0",
-        project: "zero-human",
+        project: "contract-mcp",
         updatedAt: new Date().toISOString(),
         contractsDir: dir,
         features: [
@@ -294,7 +294,7 @@ describe("indexer", () => {
       // Index has a phantom entry
       const phantomIndex: Index = {
         version: "1.0.0",
-        project: "zero-human",
+        project: "contract-mcp",
         updatedAt: new Date().toISOString(),
         contractsDir: dir,
         features: [
@@ -360,7 +360,7 @@ describe("indexer", () => {
       // Index with stale metadata
       const staleIndex: Index = {
         version: "1.0.0",
-        project: "zero-human",
+        project: "contract-mcp",
         updatedAt: new Date().toISOString(),
         contractsDir: dir,
         features: [
