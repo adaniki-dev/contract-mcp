@@ -118,13 +118,17 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   const EDGE_HIGHLIGHT = "#58a6ff";
   const DIM_ALPHA = 0.15;
   const NODE_TEXT = "#ffffff";
-  const DAMPING = 0.9;
-  const CENTER_GRAVITY = 0.01;
-  const REPULSION = 3000;
-  const SPRING_K = 0.005;
-  const REST_LENGTH = 150;
-  const SETTLE_FRAME = 300;
-  const SETTLE_THRESHOLD = 0.5;
+  const DAMPING = 0.85;
+  const CENTER_GRAVITY = 0.005;
+  const SETTLE_FRAME = 600;
+  const SETTLE_THRESHOLD = 0.3;
+  const COLLISION_PADDING = 20;
+
+  // Scale physics with node count so many contracts still spread apart
+  const nodeCount = raw.nodes.length || 1;
+  const REPULSION = Math.max(8000, 4000 + nodeCount * 800);
+  const SPRING_K = 0.008;
+  const REST_LENGTH = Math.max(200, 160 + nodeCount * 8);
 
   const canvas = document.getElementById("graph-canvas");
   const tooltip = document.getElementById("graph-tooltip");
@@ -169,10 +173,12 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   function initPositions() {
     var c = centerXY();
     var len = simNodes.length || 1;
+    // Scale initial radius with node count to avoid overlap at start
+    var radius = Math.max(200, len * 40);
     simNodes.forEach(function (node, i) {
       var angle = (i / len) * Math.PI * 2;
-      node.x = c.cx + Math.cos(angle) * 200;
-      node.y = c.cy + Math.sin(angle) * 200;
+      node.x = c.cx + Math.cos(angle) * radius;
+      node.y = c.cy + Math.sin(angle) * radius;
     });
   }
 
@@ -240,6 +246,32 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       n.x += n.vx;
       n.y += n.vy;
       totalMovement += Math.abs(n.vx) + Math.abs(n.vy);
+    }
+
+    // Collision resolution: push apart any overlapping rectangles
+    for (i = 0; i < simNodes.length; i++) {
+      for (j = i + 1; j < simNodes.length; j++) {
+        n = simNodes[i];
+        m = simNodes[j];
+        var minDX = (n.w + m.w) / 2 + COLLISION_PADDING;
+        var minDY = (n.h + m.h) / 2 + COLLISION_PADDING;
+        dx = n.x - m.x;
+        dy = n.y - m.y;
+        var overlapX = minDX - Math.abs(dx);
+        var overlapY = minDY - Math.abs(dy);
+        if (overlapX > 0 && overlapY > 0) {
+          // Push along the axis with smaller overlap
+          if (overlapX < overlapY) {
+            var push = overlapX / 2 * (dx >= 0 ? 1 : -1);
+            if (!n.pinned) n.x += push;
+            if (!m.pinned) m.x -= push;
+          } else {
+            var pushY = overlapY / 2 * (dy >= 0 ? 1 : -1);
+            if (!n.pinned) n.y += pushY;
+            if (!m.pinned) m.y -= pushY;
+          }
+        }
+      }
     }
 
     return totalMovement;
