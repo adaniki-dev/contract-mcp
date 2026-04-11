@@ -430,7 +430,9 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   }
 
   const simNodes = raw.nodes.map(function (n) {
-    const size = Math.min(80, Math.max(40, 30 + (n.deps + n.rules + n.exports) * 2));
+    // Radius scales with feature complexity, clamped for readability
+    const weight = (n.deps || 0) + (n.rules || 0) + (n.exports || 0);
+    const r = Math.min(58, Math.max(34, 30 + weight * 1.2));
     return {
       id: n.id,
       status: n.status,
@@ -441,8 +443,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       community: n.community || n.id,
       role: n.role || "member",
       x: 0, y: 0, vx: 0, vy: 0,
-      w: size * 2,
-      h: size * 0.8,
+      r: r,
       pinned: false
     };
   });
@@ -757,28 +758,22 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       totalMovement += Math.abs(n.vx) + Math.abs(n.vy);
     }
 
-    // Collision resolution: push apart any overlapping rectangles
+    // Collision resolution: push apart any overlapping circles
     for (i = 0; i < simNodes.length; i++) {
       for (j = i + 1; j < simNodes.length; j++) {
         n = simNodes[i];
         m = simNodes[j];
-        var minDX = (n.w + m.w) / 2 + COLLISION_PADDING;
-        var minDY = (n.h + m.h) / 2 + COLLISION_PADDING;
+        var minDist = n.r + m.r + COLLISION_PADDING;
         dx = n.x - m.x;
         dy = n.y - m.y;
-        var overlapX = minDX - Math.abs(dx);
-        var overlapY = minDY - Math.abs(dy);
-        if (overlapX > 0 && overlapY > 0) {
-          // Push along the axis with smaller overlap
-          if (overlapX < overlapY) {
-            var push = overlapX / 2 * (dx >= 0 ? 1 : -1);
-            if (!n.pinned) n.x += push;
-            if (!m.pinned) m.x -= push;
-          } else {
-            var pushY = overlapY / 2 * (dy >= 0 ? 1 : -1);
-            if (!n.pinned) n.y += pushY;
-            if (!m.pinned) m.y -= pushY;
-          }
+        var d2 = dx * dx + dy * dy;
+        if (d2 < minDist * minDist) {
+          var d = Math.sqrt(d2) || 1;
+          var overlap = (minDist - d) / 2;
+          var px = (dx / d) * overlap;
+          var py = (dy / d) * overlap;
+          if (!n.pinned) { n.x += px; n.y += py; }
+          if (!m.pinned) { m.x -= px; m.y -= py; }
         }
       }
     }
@@ -790,9 +785,9 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     for (var i = simNodes.length - 1; i >= 0; i--) {
       var n = simNodes[i];
       if (!isNodeVisible(n)) continue;
-      var hw = n.w / 2;
-      var hh = n.h / 2;
-      if (mx >= n.x - hw && mx <= n.x + hw && my >= n.y - hh && my <= n.y + hh) {
+      var dx = mx - n.x;
+      var dy = my - n.y;
+      if (dx * dx + dy * dy <= n.r * n.r) {
         return n;
       }
     }
@@ -821,18 +816,17 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     return null;
   }
 
-  function drawArrow(fromX, fromY, toX, toY, nodeW, nodeH, color, alpha) {
+  function drawArrow(fromX, fromY, toX, toY, targetR, color, alpha) {
     var dx = toX - fromX;
     var dy = toY - fromY;
     var dist = Math.sqrt(dx * dx + dy * dy);
     if (dist < 1) return;
     var angle = Math.atan2(dy, dx);
 
-    var hw = nodeW / 2 + 4;
-    var hh = nodeH / 2 + 4;
-    var scale = Math.min(hw / Math.max(Math.abs(Math.cos(angle)), 0.01), hh / Math.max(Math.abs(Math.sin(angle)), 0.01));
-    var endX = toX - Math.cos(angle) * scale;
-    var endY = toY - Math.sin(angle) * scale;
+    // Stop the arrow at the edge of the target circle
+    var stopAt = targetR + 4;
+    var endX = toX - Math.cos(angle) * stopAt;
+    var endY = toY - Math.sin(angle) * stopAt;
 
     ctx.globalAlpha = alpha;
     ctx.beginPath();
@@ -929,14 +923,12 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
         edgeAlpha = 1;
       }
 
-      drawArrow(s.x, s.y, t.x, t.y, t.w, t.h, edgeColor, edgeAlpha);
+      drawArrow(s.x, s.y, t.x, t.y, t.r, edgeColor, edgeAlpha);
     }
 
     for (var j = 0; j < simNodes.length; j++) {
       var n = simNodes[j];
       if (!isNodeVisible(n)) continue;
-      var nx = n.x - n.w / 2;
-      var ny = n.y - n.h / 2;
       var fillColor = communityColor(n.community);
       var borderColor = ROLE_COLORS[n.role] || ROLE_COLORS.member;
       var statusColor = STATUS_COLORS[n.status] || "#8b949e";
@@ -957,11 +949,12 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       // Hub pulsing halo
       if (n.role === "hub") {
         ctx.save();
-        ctx.globalAlpha = alpha * (0.15 + 0.15 * hubPulse);
-        var halo = 6 + 4 * hubPulse;
+        ctx.globalAlpha = alpha * (0.2 + 0.2 * hubPulse);
+        var haloR = n.r + 8 + 4 * hubPulse;
         ctx.strokeStyle = ROLE_COLORS.hub;
-        ctx.lineWidth = halo;
-        roundRect(nx - halo, ny - halo, n.w + halo * 2, n.h + halo * 2, 10);
+        ctx.lineWidth = 4 + 2 * hubPulse;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, haloR, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
@@ -969,45 +962,72 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       // Search match aura
       if (isSearchMatch) {
         ctx.save();
-        ctx.globalAlpha = 0.6;
+        ctx.globalAlpha = 0.7;
         ctx.strokeStyle = "#58a6ff";
         ctx.lineWidth = 4;
-        roundRect(nx - 8, ny - 8, n.w + 16, n.h + 16, 10);
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r + 9, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
 
-      ctx.shadowColor = fillColor;
-      ctx.shadowBlur = 14;
+      // Main ball fill with outer drop shadow
+      ctx.shadowColor = "rgba(0, 0, 0, 0.55)";
+      ctx.shadowBlur = 18;
       ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
+      ctx.shadowOffsetY = 4;
 
-      roundRect(nx, ny, n.w, n.h, 6);
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
       ctx.fillStyle = fillColor;
       ctx.fill();
 
       ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
 
-      // Border color = role, thickness reflects role prominence
-      var borderWidth = n.role === "hub" ? 3.5 : n.role === "bridge" ? 3 : n.role === "leaf" ? 2 : 2;
-      roundRect(nx, ny, n.w, n.h, 6);
+      // Radial gradient highlight to make the ball feel spherical
+      var grad = ctx.createRadialGradient(
+        n.x - n.r * 0.35, n.y - n.r * 0.4, n.r * 0.1,
+        n.x, n.y, n.r
+      );
+      grad.addColorStop(0, "rgba(255, 255, 255, 0.45)");
+      grad.addColorStop(0.4, "rgba(255, 255, 255, 0.08)");
+      grad.addColorStop(0.85, "rgba(0, 0, 0, 0)");
+      grad.addColorStop(1, "rgba(0, 0, 0, 0.3)");
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Role-colored border
+      var borderWidth = n.role === "hub" ? 3.5 : n.role === "bridge" ? 3 : 2.25;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r - borderWidth / 2, 0, Math.PI * 2);
       ctx.strokeStyle = borderColor;
       ctx.lineWidth = borderWidth;
       ctx.stroke();
 
-      // Status dot (top-left corner inside the node)
+      // Status dot (top of the ball, 12 o'clock, outside the stroke)
+      var dotOffset = n.r * 0.68;
       ctx.fillStyle = statusColor;
       ctx.beginPath();
-      ctx.arc(nx + 8, ny + 8, 3, 0, Math.PI * 2);
+      ctx.arc(n.x, n.y - dotOffset, 3.5, 0, Math.PI * 2);
       ctx.fill();
+      ctx.strokeStyle = "rgba(13, 17, 23, 0.8)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
+      // Feature name centered in the ball
       ctx.fillStyle = NODE_TEXT;
-      ctx.font = "600 12px ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
+      ctx.font = "700 12px ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
+      ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
+      ctx.shadowBlur = 3;
 
       var label = n.id;
-      var maxTextW = n.w - 12;
+      // Circle inscribed text area is ~1.4 * r on the horizontal midline
+      var maxTextW = n.r * 1.55;
       if (ctx.measureText(label).width > maxTextW) {
         while (label.length > 3 && ctx.measureText(label + "...").width > maxTextW) {
           label = label.slice(0, -1);
@@ -1015,15 +1035,19 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
         label += "...";
       }
       ctx.fillText(label, n.x, n.y);
+      ctx.shadowBlur = 0;
 
-      // Role icon for hubs/bridges (small, top-right)
+      // Role icon on the top-right of the ball (~1:30 position)
       if (n.role === "hub" || n.role === "bridge") {
+        var iconAngle = -Math.PI / 4; // top-right
+        var iconX = n.x + Math.cos(iconAngle) * (n.r - 8);
+        var iconY = n.y + Math.sin(iconAngle) * (n.r - 8);
         ctx.font = "11px ui-monospace, monospace";
         var icon = n.role === "hub" ? "⚡" : "🌉";
-        ctx.fillStyle = n.role === "hub" ? "#d29a28" : "#f85149";
-        ctx.textAlign = "right";
-        ctx.textBaseline = "top";
-        ctx.fillText(icon, nx + n.w - 4, ny + 3);
+        ctx.fillStyle = n.role === "hub" ? ROLE_COLORS.hub : ROLE_COLORS.bridge;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(icon, iconX, iconY);
       }
 
       ctx.globalAlpha = 1;
@@ -1048,10 +1072,10 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     for (var i = 0; i < simNodes.length; i++) {
       var n = simNodes[i];
       if (!isNodeVisible(n)) continue;
-      if (n.x - n.w / 2 < minX) minX = n.x - n.w / 2;
-      if (n.y - n.h / 2 < minY) minY = n.y - n.h / 2;
-      if (n.x + n.w / 2 > maxX) maxX = n.x + n.w / 2;
-      if (n.y + n.h / 2 > maxY) maxY = n.y + n.h / 2;
+      if (n.x - n.r < minX) minX = n.x - n.r;
+      if (n.y - n.r < minY) minY = n.y - n.r;
+      if (n.x + n.r > maxX) maxX = n.x + n.r;
+      if (n.y + n.r > maxY) maxY = n.y + n.r;
     }
     if (!isFinite(minX)) return;
     var pad = 40;
