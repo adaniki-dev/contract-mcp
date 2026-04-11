@@ -8,6 +8,7 @@ import type {
   Result,
   Contract,
   ValidationResult,
+  CommunityReport,
 } from "@shared/types/contract.types";
 import { DEFAULT_CONTRACTS_DIR } from "@shared/config";
 import { join } from "path";
@@ -26,6 +27,7 @@ interface FullData {
   data: DashboardData;
   contracts: Contract[];
   violations: Map<string, ValidationResult>;
+  structure: CommunityReport;
 }
 
 function buildDashboardData(
@@ -87,21 +89,30 @@ async function collectData(projectRoot: string): Promise<Result<FullData, Dashbo
     violationMap.set(v.feature, v);
   }
 
+  const graph = DependencyGraph.fromContracts(contracts);
+  const structure = graph.analyzeStructure();
+
   return {
     ok: true,
     value: {
       data: buildDashboardData(contracts, validations),
       contracts,
       violations: violationMap,
+      structure,
     },
   };
 }
 
-function buildGraphData(contracts: Contract[]): { nodes: GraphNode[]; edges: GraphEdge[] } {
-  const graph = DependencyGraph.fromContracts(contracts);
-  const communities = graph.detectCommunities();
-  const report = graph.analyzeStructure();
-  const roleByFeature = new Map(report.classifications.map((c) => [c.feature, c.role]));
+function buildGraphData(
+  contracts: Contract[],
+  structure: CommunityReport
+): { nodes: GraphNode[]; edges: GraphEdge[] } {
+  const communityByFeature = new Map(
+    structure.classifications.map((c) => [c.feature, c.community])
+  );
+  const roleByFeature = new Map(
+    structure.classifications.map((c) => [c.feature, c.role])
+  );
 
   const nodes: GraphNode[] = contracts.map((c) => {
     const feature = c.contract.feature;
@@ -112,7 +123,7 @@ function buildGraphData(contracts: Contract[]): { nodes: GraphNode[]; edges: Gra
       rules: c.rules.length,
       exports: c.exports.functions.length + c.exports.types.length,
       description: c.contract.description,
-      community: communities.get(feature) ?? feature,
+      community: communityByFeature.get(feature) ?? feature,
       role: roleByFeature.get(feature) ?? "member",
     };
   });
@@ -191,7 +202,13 @@ export async function startDashboard(
       if (url.pathname === "/api/graph") {
         const result = await collectData(projectRoot);
         if (!result.ok) return Response.json({ error: result.error.message }, { status: 500 });
-        return Response.json(buildGraphData(result.value.contracts));
+        return Response.json(buildGraphData(result.value.contracts, result.value.structure));
+      }
+
+      if (url.pathname === "/api/structure") {
+        const result = await collectData(projectRoot);
+        if (!result.ok) return Response.json({ error: result.error.message }, { status: 500 });
+        return Response.json(result.value.structure);
       }
 
       // HTML pages
@@ -200,24 +217,24 @@ export async function startDashboard(
         return new Response(`Error: ${result.error.message}`, { status: 500 });
       }
 
-      const { data, contracts, violations } = result.value;
+      const { data, contracts, violations, structure } = result.value;
 
       if (url.pathname === "/project") {
         const selectedFeature = url.searchParams.get("feature") ?? undefined;
-        const content = renderProject(contracts, selectedFeature);
+        const content = renderProject(contracts, selectedFeature, structure);
         const html = renderLayout("project", content);
         return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
       }
 
       if (url.pathname === "/graph") {
-        const graphData = buildGraphData(contracts);
+        const graphData = buildGraphData(contracts, structure);
         const content = renderGraph(graphData.nodes, graphData.edges);
         const html = renderLayout("graph", content);
         return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
       }
 
       // Default: Summary
-      const content = renderSummary(data, violations);
+      const content = renderSummary(data, violations, structure);
       const html = renderLayout("summary", content);
       return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
     },
@@ -240,7 +257,11 @@ export async function renderDashboard(
   const result = await collectData(projectRoot);
   if (!result.ok) return result;
 
-  const content = renderSummary(result.value.data, result.value.violations);
+  const content = renderSummary(
+    result.value.data,
+    result.value.violations,
+    result.value.structure
+  );
   const html = renderLayout("summary", content);
   return { ok: true, value: html };
 }

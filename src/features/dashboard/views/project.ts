@@ -802,7 +802,12 @@ function renderStyles(): string {
 </style>`;
 }
 
-export function renderProject(contracts: Contract[], selectedFeature?: string): string {
+export function renderProject(
+  contracts: Contract[],
+  selectedFeature?: string,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _structure?: import("@shared/types/contract.types").CommunityReport
+): string {
   const selected = selectedFeature
     ? contracts.find((c) => c.contract.feature === selectedFeature)
     : undefined;
