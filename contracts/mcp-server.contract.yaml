@@ -100,6 +100,11 @@ endpoints:
     input: "{ projectRoot?: string, force?: boolean }"
     output: "XML with hook path and cli path"
     errors: [NOT_A_GIT_REPO, HOOK_EXISTS]
+  - tool: analyze_structure
+    description: "Detect communities, hubs, bridges and orphans in the contracts dependency graph"
+    input: "{ projectRoot?: string }"
+    output: "XML<CommunityReport>"
+    errors: [COMPILE_ERROR]
 
 types:
   - name: McpToolInput
@@ -176,3 +181,5 @@ files:
     purpose: "Handler do tool install_hook"
   - path: src/app/cli/check-commit.ts
     purpose: "CLI standalone invocado pelo git pre-commit hook"
+  - path: src/app/mcp-server/tools/analyze-structure.ts
+    purpose: "Handler do tool analyze_structure"

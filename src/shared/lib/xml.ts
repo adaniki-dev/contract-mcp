@@ -6,6 +6,7 @@ import type {
   DriftReport,
   BlastRadius,
   CheckCommitResult,
+  CommunityReport,
 } from "@shared/types/contract.types";
 
 // === Core XML primitives ===
@@ -161,6 +162,49 @@ export function formatIndex(index: Index): string {
   return `<index version="${index.version}" project="${escapeXml(index.project)}" features="${index.features.length}" updated="${index.updatedAt}">
 ${entries}
 </index>`;
+}
+
+export function formatCommunityReport(report: CommunityReport): string {
+  const classByFeature = new Map(report.classifications.map((c) => [c.feature, c]));
+
+  const communitiesXml = report.communities
+    .map((c) => {
+      const features = c.features
+        .map((f) => {
+          const cls = classByFeature.get(f);
+          const role = cls?.role ?? "member";
+          const degree = cls?.degree ?? 0;
+          return `<feature name="${escapeXml(f)}" role="${role}" degree="${degree}" />`;
+        })
+        .join("\n");
+      return `<community id="${escapeXml(c.id)}" size="${c.size}" density="${c.density}">
+${features}
+</community>`;
+    })
+    .join("\n");
+
+  const hubsXml = report.hubs
+    .map((h) => `<feature name="${escapeXml(h)}" />`)
+    .join("\n");
+  const bridgesXml = report.bridges
+    .map((b) => `<feature name="${escapeXml(b)}" />`)
+    .join("\n");
+  const orphansXml = report.orphans
+    .map((o) => `<feature name="${escapeXml(o)}" />`)
+    .join("\n");
+
+  return `<structure communities="${report.communities.length}" orphans="${report.orphans.length}" bridges="${report.bridges.length}" hubs="${report.hubs.length}" modularity="${report.modularity}">
+${communitiesXml}
+<hubs count="${report.hubs.length}">
+${hubsXml}
+</hubs>
+<bridges count="${report.bridges.length}">
+${bridgesXml}
+</bridges>
+<orphans count="${report.orphans.length}">
+${orphansXml}
+</orphans>
+</structure>`;
 }
 
 export function formatCheckCommitResult(result: CheckCommitResult): string {

@@ -5,6 +5,8 @@ export interface GraphNode {
   rules: number;
   exports: number;
   description: string;
+  community?: string;
+  role?: string;
 }
 
 export interface GraphEdge {
@@ -109,10 +111,66 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     font-style: italic;
   }
 
+  .graph-legend {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: rgba(22, 27, 34, 0.92);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.75rem;
+    color: #c9d1d9;
+    font-family: ui-monospace, monospace;
+    max-width: 240px;
+    pointer-events: none;
+    backdrop-filter: blur(4px);
+  }
+
+  .graph-legend .legend-title {
+    font-weight: 700;
+    margin-bottom: 0.375rem;
+    color: #8b949e;
+    text-transform: uppercase;
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+  }
+
+  .graph-legend .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .graph-legend .legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .graph-legend .legend-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .graph-legend .legend-count {
+    color: #8b949e;
+    margin-left: 0.25rem;
+  }
+
   @media (max-width: 768px) {
     .graph-container {
       height: calc(100vh - 56px);
       margin: -64px -1rem -1.5rem;
+    }
+    .graph-legend {
+      top: 8px;
+      right: 8px;
+      font-size: 0.6875rem;
+      max-width: 180px;
     }
   }
 </style>
@@ -120,6 +178,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
 <div class="graph-container">
   <canvas id="graph-canvas"></canvas>
   <div class="graph-tooltip" id="graph-tooltip"></div>
+  <div class="graph-legend" id="graph-legend"></div>
   <div class="graph-hint">drag nodes · wheel to zoom · middle-click drag to pan · click node to open</div>
 </div>
 
@@ -149,7 +208,28 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
 
   const canvas = document.getElementById("graph-canvas");
   const tooltip = document.getElementById("graph-tooltip");
+  const legendEl = document.getElementById("graph-legend");
   const ctx = canvas.getContext("2d");
+
+  function communityColor(label) {
+    if (!label) return "#30363d";
+    let hash = 0;
+    for (let i = 0; i < label.length; i++) {
+      hash = ((hash << 5) - hash + label.charCodeAt(i)) | 0;
+    }
+    const hue = Math.abs(hash) % 360;
+    return "hsl(" + hue + ", 55%, 42%)";
+  }
+
+  function lightenColor(label) {
+    if (!label) return "#484f58";
+    let hash = 0;
+    for (let i = 0; i < label.length; i++) {
+      hash = ((hash << 5) - hash + label.charCodeAt(i)) | 0;
+    }
+    const hue = Math.abs(hash) % 360;
+    return "hsl(" + hue + ", 60%, 65%)";
+  }
 
   const simNodes = raw.nodes.map(function (n) {
     const size = Math.min(80, Math.max(40, 30 + (n.deps + n.rules + n.exports) * 2));
@@ -160,12 +240,33 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       rules: n.rules,
       exports: n.exports,
       description: n.description,
+      community: n.community || n.id,
+      role: n.role || "member",
       x: 0, y: 0, vx: 0, vy: 0,
       w: size * 2,
       h: size * 0.8,
       pinned: false
     };
   });
+
+  // Build legend
+  function renderLegend() {
+    const counts = {};
+    for (const n of simNodes) {
+      counts[n.community] = (counts[n.community] || 0) + 1;
+    }
+    const entries = Object.entries(counts).sort(function (a, b) { return b[1] - a[1]; });
+    let html = '<div class="legend-title">Communities (' + entries.length + ')</div>';
+    for (const [label, cnt] of entries) {
+      html += '<div class="legend-item">';
+      html += '<div class="legend-swatch" style="background:' + communityColor(label) + '"></div>';
+      html += '<span class="legend-label">' + label + '</span>';
+      html += '<span class="legend-count">(' + cnt + ')</span>';
+      html += '</div>';
+    }
+    legendEl.innerHTML = html;
+  }
+  renderLegend();
 
   const nodeMap = {};
   simNodes.forEach(function (n) { nodeMap[n.id] = n; });
@@ -454,7 +555,8 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       var n = simNodes[j];
       var nx = n.x - n.w / 2;
       var ny = n.y - n.h / 2;
-      var color = STATUS_COLORS[n.status] || "#8b949e";
+      var fillColor = communityColor(n.community);
+      var borderColor = STATUS_COLORS[n.status] || "#8b949e";
       var alpha = 1;
 
       if (highlightSet && !highlightSet[n.id]) {
@@ -463,20 +565,22 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
 
       ctx.globalAlpha = alpha;
 
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 12;
+      ctx.shadowColor = fillColor;
+      ctx.shadowBlur = 14;
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
 
       roundRect(nx, ny, n.w, n.h, 6);
-      ctx.fillStyle = color;
+      ctx.fillStyle = fillColor;
       ctx.fill();
 
       ctx.shadowBlur = 0;
 
+      // Border thickness reflects role: hub=3, bridge=2, leaf=1, member/orphan=1
+      var borderWidth = n.role === "hub" ? 3 : n.role === "bridge" ? 2.5 : 1.5;
       roundRect(nx, ny, n.w, n.h, 6);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = borderWidth;
       ctx.stroke();
 
       ctx.fillStyle = NODE_TEXT;
@@ -500,9 +604,12 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
 
   function showNodeTooltip(n, mx, my) {
     var statusColor = STATUS_COLORS[n.status] || "#8b949e";
+    var commColor = communityColor(n.community);
     tooltip.innerHTML =
       '<div class="tt-name">' + n.id + '</div>' +
       '<div class="tt-row"><span class="tt-label">Status</span><span class="tt-val" style="color:' + statusColor + '">' + n.status + '</span></div>' +
+      '<div class="tt-row"><span class="tt-label">Community</span><span class="tt-val" style="color:' + commColor + '">' + n.community + '</span></div>' +
+      '<div class="tt-row"><span class="tt-label">Role</span><span class="tt-val">' + n.role + '</span></div>' +
       '<div class="tt-row"><span class="tt-label">Dependencies</span><span class="tt-val">' + n.deps + '</span></div>' +
       '<div class="tt-row"><span class="tt-label">Rules</span><span class="tt-val">' + n.rules + '</span></div>' +
       '<div class="tt-row"><span class="tt-label">Exports</span><span class="tt-val">' + n.exports + '</span></div>' +

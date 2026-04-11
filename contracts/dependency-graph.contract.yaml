@@ -41,6 +41,14 @@ rules:
     description: "getBlastRadiusLevels() deve retornar features agrupadas por profundidade usando BFS"
     severity: error
     testable: true
+  - id: community-detection
+    description: "detectCommunities() usa label propagation para agrupar features em clusters"
+    severity: error
+    testable: true
+  - id: structure-analysis
+    description: "analyzeStructure() retorna communities, classifications, hubs, bridges, orphans e modularity"
+    severity: error
+    testable: true
 
 files:
   - path: src/entities/dependency-graph/index.ts

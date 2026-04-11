@@ -98,14 +98,24 @@ async function collectData(projectRoot: string): Promise<Result<FullData, Dashbo
 }
 
 function buildGraphData(contracts: Contract[]): { nodes: GraphNode[]; edges: GraphEdge[] } {
-  const nodes: GraphNode[] = contracts.map((c) => ({
-    id: c.contract.feature,
-    status: c.contract.status,
-    deps: c.dependencies.internal.length,
-    rules: c.rules.length,
-    exports: c.exports.functions.length + c.exports.types.length,
-    description: c.contract.description,
-  }));
+  const graph = DependencyGraph.fromContracts(contracts);
+  const communities = graph.detectCommunities();
+  const report = graph.analyzeStructure();
+  const roleByFeature = new Map(report.classifications.map((c) => [c.feature, c.role]));
+
+  const nodes: GraphNode[] = contracts.map((c) => {
+    const feature = c.contract.feature;
+    return {
+      id: feature,
+      status: c.contract.status,
+      deps: c.dependencies.internal.length,
+      rules: c.rules.length,
+      exports: c.exports.functions.length + c.exports.types.length,
+      description: c.contract.description,
+      community: communities.get(feature) ?? feature,
+      role: roleByFeature.get(feature) ?? "member",
+    };
+  });
 
   const edges: GraphEdge[] = [];
   for (const c of contracts) {

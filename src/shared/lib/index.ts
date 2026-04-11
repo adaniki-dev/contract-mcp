@@ -14,6 +14,7 @@ export {
   formatDriftReport,
   formatBlastRadius,
   formatCheckCommitResult,
+  formatCommunityReport,
 } from "./xml";
 export {
   initParsers,

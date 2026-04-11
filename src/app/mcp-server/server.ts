@@ -14,6 +14,7 @@ import { handleReference } from "./tools/reference";
 import { handleBlastRadius } from "./tools/blast-radius";
 import { handleCheckCommit } from "./tools/check-commit";
 import { handleInstallHook } from "./tools/install-hook";
+import { handleAnalyzeStructure } from "./tools/analyze-structure";
 import { startDashboard } from "@features/dashboard";
 
 export async function startServer(): Promise<void> {
@@ -238,6 +239,20 @@ export async function startServer(): Promise<void> {
     },
     async (args) => {
       const xml = await handleInstallHook(args);
+      return { content: [{ type: "text" as const, text: xml }] };
+    }
+  );
+
+  server.registerTool(
+    "analyze_structure",
+    {
+      description: "Detect communities, hubs, bridges and orphans in the contracts dependency graph using label propagation. Returns modularity score and per-feature classifications.",
+      inputSchema: {
+        projectRoot: z.string().optional().describe("Project root path (default: cwd)"),
+      },
+    },
+    async (args) => {
+      const xml = await handleAnalyzeStructure(args);
       return { content: [{ type: "text" as const, text: xml }] };
     }
   );

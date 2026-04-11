@@ -210,6 +210,32 @@ export interface CheckCommitError {
   message: string;
 }
 
+// Community Detection types
+export type NodeRole = "orphan" | "bridge" | "hub" | "leaf" | "member";
+
+export interface Community {
+  id: string;
+  features: string[];
+  size: number;
+  density: number;
+}
+
+export interface FeatureClassification {
+  feature: string;
+  community: string;
+  role: NodeRole;
+  degree: number;
+}
+
+export interface CommunityReport {
+  communities: Community[];
+  classifications: FeatureClassification[];
+  orphans: string[];
+  bridges: string[];
+  hubs: string[];
+  modularity: number;
+}
+
 // Dashboard types
 export interface DashboardData {
   project: string;
