@@ -227,12 +227,12 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     right: 12px;
     background: rgba(22, 27, 34, 0.92);
     border: 1px solid #30363d;
-    border-radius: 8px;
-    padding: 0.625rem 0.75rem;
+    border-radius: 10px;
+    padding: 0.75rem 0.875rem;
     font-size: 0.75rem;
     color: #c9d1d9;
     font-family: ui-monospace, monospace;
-    max-width: 240px;
+    max-width: 300px;
     backdrop-filter: blur(4px);
     z-index: 4;
   }
@@ -246,15 +246,38 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     letter-spacing: 0.04em;
   }
 
+  .graph-legend__section {
+    margin-bottom: 0.625rem;
+  }
+  .graph-legend__section:last-child {
+    margin-bottom: 0;
+  }
+  .graph-legend__section-title {
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8b949e;
+    font-weight: 700;
+    margin-bottom: 0.4rem;
+  }
+
+  .graph-legend__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+  }
+
   .graph-legend .legend-item {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.25rem;
+    gap: 0.25rem;
     cursor: pointer;
-    padding: 0.15rem 0.25rem;
-    border-radius: 4px;
+    padding: 0.25rem;
+    border-radius: 6px;
     transition: background 120ms;
+    min-width: 52px;
+    max-width: 72px;
   }
   .graph-legend .legend-item:hover {
     background: rgba(88, 166, 255, 0.1);
@@ -264,21 +287,26 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   }
 
   .graph-legend .legend-swatch {
-    width: 12px;
-    height: 12px;
-    border-radius: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
     flex-shrink: 0;
+    border: 1.5px solid rgba(255, 255, 255, 0.15);
   }
 
   .graph-legend .legend-label {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.6875rem;
+    max-width: 70px;
+    text-align: center;
+    color: #c9d1d9;
   }
 
   .graph-legend .legend-count {
     color: #8b949e;
-    margin-left: 0.25rem;
+    font-size: 0.625rem;
   }
 
   @media (max-width: 768px) {
@@ -334,6 +362,13 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     draft: "#1f6feb",
     active: "#3fb950",
     deprecated: "#f85149"
+  };
+  const ROLE_COLORS = {
+    hub: "#f59f00",
+    bridge: "#e03131",
+    leaf: "#37b24d",
+    orphan: "#868e96",
+    member: "#5c7cfa"
   };
   const EDGE_COLOR = "#30363d";
   const EDGE_HIGHLIGHT = "#58a6ff";
@@ -477,21 +512,51 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     communitySelect.appendChild(opt);
   }
 
+  // === Role counts ===
+  const roleCounts = {};
+  for (const n of simNodes) {
+    const r = n.role || "member";
+    roleCounts[r] = (roleCounts[r] || 0) + 1;
+  }
+  const roleOrder = ["hub", "bridge", "leaf", "member", "orphan"];
+
   // === Legend (clickable) ===
   function renderLegend() {
-    let html = '<div class="legend-title">Communities (' + communityEntries.length + ')</div>';
+    let html = "";
+
+    // Communities section
+    html += '<div class="graph-legend__section">';
+    html += '<div class="graph-legend__section-title">Communities (' + communityEntries.length + ')</div>';
+    html += '<div class="graph-legend__grid">';
     for (const [label, cnt] of communityEntries) {
       const dimClass = filterState.community && filterState.community !== label ? " dim" : "";
       html += '<div class="legend-item' + dimClass + '" data-community="' + label + '">';
       html += '<div class="legend-swatch" style="background:' + communityColor(label) + '"></div>';
       html += '<span class="legend-label">' + label + '</span>';
-      html += '<span class="legend-count">(' + cnt + ')</span>';
+      html += '<span class="legend-count">' + cnt + '</span>';
       html += '</div>';
     }
+    html += '</div></div>';
+
+    // Roles section
+    html += '<div class="graph-legend__section">';
+    html += '<div class="graph-legend__section-title">Roles</div>';
+    html += '<div class="graph-legend__grid">';
+    for (const role of roleOrder) {
+      const cnt = roleCounts[role] || 0;
+      if (cnt === 0) continue;
+      html += '<div class="legend-item" data-role="' + role + '">';
+      html += '<div class="legend-swatch" style="background:' + (ROLE_COLORS[role] || "#8b949e") + '"></div>';
+      html += '<span class="legend-label">' + role + '</span>';
+      html += '<span class="legend-count">' + cnt + '</span>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+
     legendEl.innerHTML = html;
-    // Wire clicks
-    const items = legendEl.querySelectorAll(".legend-item");
-    items.forEach(function (el) {
+
+    // Wire community clicks
+    legendEl.querySelectorAll("[data-community]").forEach(function (el) {
       el.addEventListener("click", function () {
         const label = el.getAttribute("data-community");
         if (filterState.community === label) {
@@ -855,7 +920,8 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       var nx = n.x - n.w / 2;
       var ny = n.y - n.h / 2;
       var fillColor = communityColor(n.community);
-      var borderColor = STATUS_COLORS[n.status] || "#8b949e";
+      var borderColor = ROLE_COLORS[n.role] || ROLE_COLORS.member;
+      var statusColor = STATUS_COLORS[n.status] || "#8b949e";
       var alpha = 1;
 
       if (highlightSet && !highlightSet[n.id]) {
@@ -875,7 +941,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
         ctx.save();
         ctx.globalAlpha = alpha * (0.15 + 0.15 * hubPulse);
         var halo = 6 + 4 * hubPulse;
-        ctx.strokeStyle = "#d29a28";
+        ctx.strokeStyle = ROLE_COLORS.hub;
         ctx.lineWidth = halo;
         roundRect(nx - halo, ny - halo, n.w + halo * 2, n.h + halo * 2, 10);
         ctx.stroke();
@@ -904,12 +970,18 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
 
       ctx.shadowBlur = 0;
 
-      // Border thickness reflects role
-      var borderWidth = n.role === "hub" ? 3 : n.role === "bridge" ? 2.5 : 1.5;
+      // Border color = role, thickness reflects role prominence
+      var borderWidth = n.role === "hub" ? 3.5 : n.role === "bridge" ? 3 : n.role === "leaf" ? 2 : 2;
       roundRect(nx, ny, n.w, n.h, 6);
       ctx.strokeStyle = borderColor;
       ctx.lineWidth = borderWidth;
       ctx.stroke();
+
+      // Status dot (top-left corner inside the node)
+      ctx.fillStyle = statusColor;
+      ctx.beginPath();
+      ctx.arc(nx + 8, ny + 8, 3, 0, Math.PI * 2);
+      ctx.fill();
 
       ctx.fillStyle = NODE_TEXT;
       ctx.font = "600 12px ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace";

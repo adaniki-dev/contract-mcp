@@ -60,6 +60,25 @@ export function roleIcon(role: NodeRole | string | undefined): string {
   }
 }
 
+/**
+ * Role-specific colors. Distinct hues chosen to stand out from both
+ * community hash colors and status colors.
+ */
+export function roleColor(role: NodeRole | string | undefined): string {
+  switch (role) {
+    case "hub":
+      return "#f59f00"; // vivid amber
+    case "bridge":
+      return "#e03131"; // bold red
+    case "leaf":
+      return "#37b24d"; // fresh green
+    case "orphan":
+      return "#868e96"; // muted gray
+    default:
+      return "#5c7cfa"; // soft indigo (member)
+  }
+}
+
 export function roleLabel(role: NodeRole | string | undefined): string {
   return role ? String(role) : "member";
 }
