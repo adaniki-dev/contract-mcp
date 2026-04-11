@@ -247,7 +247,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   }
 
   .graph-legend__section {
-    margin-bottom: 0.625rem;
+    margin-bottom: 0.875rem;
   }
   .graph-legend__section:last-child {
     margin-bottom: 0;
@@ -258,40 +258,56 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     letter-spacing: 0.06em;
     color: #8b949e;
     font-weight: 700;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.625rem;
   }
 
   .graph-legend__grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 0.75rem;
+    gap: 0.75rem 1rem;
+    justify-content: flex-start;
   }
 
   .graph-legend .legend-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.375rem;
     cursor: pointer;
-    padding: 0.25rem;
-    border-radius: 6px;
-    transition: background 120ms;
-    min-width: 52px;
-    max-width: 72px;
+    background: transparent;
+    border: none;
+    padding: 0;
+    min-width: 64px;
+    max-width: 84px;
+    transition: transform 150ms;
   }
   .graph-legend .legend-item:hover {
-    background: rgba(88, 166, 255, 0.1);
+    transform: translateY(-1px);
+  }
+  .graph-legend .legend-item:hover .legend-swatch {
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.15),
+      0 0 12px 2px rgba(88, 166, 255, 0.25),
+      inset 0 1px 3px rgba(255, 255, 255, 0.35),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.35);
   }
   .graph-legend .legend-item.dim {
-    opacity: 0.35;
+    opacity: 0.3;
+  }
+  .graph-legend .legend-item.dim .legend-swatch {
+    filter: saturate(0.3);
   }
 
   .graph-legend .legend-swatch {
-    width: 14px;
-    height: 14px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     flex-shrink: 0;
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    box-shadow:
+      inset 0 1px 3px rgba(255, 255, 255, 0.35),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.35),
+      0 2px 6px rgba(0, 0, 0, 0.4);
+    transition: box-shadow 180ms, filter 180ms;
   }
 
   .graph-legend .legend-label {
@@ -299,14 +315,16 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     overflow: hidden;
     text-overflow: ellipsis;
     font-size: 0.6875rem;
-    max-width: 70px;
+    max-width: 82px;
     text-align: center;
     color: #c9d1d9;
+    font-weight: 600;
   }
 
   .graph-legend .legend-count {
     color: #8b949e;
     font-size: 0.625rem;
+    margin-top: -0.125rem;
   }
 
   @media (max-width: 768px) {
