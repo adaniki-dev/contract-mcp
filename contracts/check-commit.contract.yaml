@@ -13,6 +13,10 @@ dependencies:
       reason: "Valida as features afetadas pelos arquivos staged"
     - feature: indexer
       reason: "Drift check como warning não-bloqueante"
+    - feature: shared-config
+      reason: "Constantes DEFAULT_CONTRACTS_DIR e DEFAULT_INDEX_PATH"
+    - feature: shared-types
+      reason: "Tipos CheckCommitResult, CheckCommitError, AffectedFeature, Result, Contract"
   external: []
 
 exports:

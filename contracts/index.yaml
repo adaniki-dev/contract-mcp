@@ -1,6 +1,6 @@
 version: 1.0.0
 project: contract-mcp
-updatedAt: 2026-04-10T23:57:31.020Z
+updatedAt: 2026-04-11T00:29:03.956Z
 contractsDir: /home/adan/workspace/zero-human/contracts
 features:
   - feature: dependency-graph
@@ -8,7 +8,8 @@ features:
     status: draft
     description: Constrói e analisa grafo de dependências entre features a partir
       dos contratos
-    dependsOn: []
+    dependsOn:
+      - shared-types
     exportsCount: 1
     rulesCount: 6
   - feature: validator
@@ -19,14 +20,28 @@ features:
       - compiler
       - contract-entity
       - dependency-graph
+      - shared-lib
+      - shared-config
+      - shared-types
     exportsCount: 5
     rulesCount: 6
   - feature: contract-entity
     contractPath: contract-entity.contract.yaml
     status: draft
     description: Carrega e valida contratos YAML, transformando em objetos tipados
-    dependsOn: []
+    dependsOn:
+      - shared-lib
+      - shared-types
     exportsCount: 4
+    rulesCount: 4
+  - feature: shared-lib
+    contractPath: shared-lib.contract.yaml
+    status: draft
+    description: "Shared library: YAML parser, XML builder/formatters e parsers
+      TS/JS via oxc"
+    dependsOn:
+      - shared-types
+    exportsCount: 28
     rulesCount: 4
   - feature: mcp-server
     contractPath: mcp-server.contract.yaml
@@ -38,8 +53,26 @@ features:
       - indexer
       - dashboard
       - check-commit
+      - dependency-graph
+      - shared-lib
+      - shared-config
+      - shared-types
     exportsCount: 3
     rulesCount: 4
+  - feature: shared-config
+    contractPath: shared-config.contract.yaml
+    status: draft
+    description: "Constants e defaults do projeto: paths, patterns e diretórios ignorados"
+    dependsOn: []
+    exportsCount: 1
+    rulesCount: 2
+  - feature: shared-types
+    contractPath: shared-types.contract.yaml
+    status: draft
+    description: Definições de tipos TypeScript compartilhadas em todo o projeto
+    dependsOn: []
+    exportsCount: 44
+    rulesCount: 3
   - feature: check-commit
     contractPath: check-commit.contract.yaml
     status: draft
@@ -48,6 +81,8 @@ features:
       - compiler
       - validator
       - indexer
+      - shared-config
+      - shared-types
     exportsCount: 4
     rulesCount: 4
   - feature: compiler
@@ -56,6 +91,8 @@ features:
     description: Parseia contratos YAML, valida contra o schema e retorna diagnósticos
     dependsOn:
       - contract-entity
+      - shared-config
+      - shared-types
     exportsCount: 5
     rulesCount: 4
   - feature: dashboard
@@ -66,6 +103,9 @@ features:
       - compiler
       - validator
       - indexer
+      - dependency-graph
+      - shared-config
+      - shared-types
     exportsCount: 6
     rulesCount: 4
   - feature: indexer
@@ -75,5 +115,8 @@ features:
     dependsOn:
       - compiler
       - contract-entity
+      - shared-lib
+      - shared-config
+      - shared-types
     exportsCount: 6
     rulesCount: 4

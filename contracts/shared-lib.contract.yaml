@@ -1,0 +1,157 @@
+contract:
+  version: "1.0.0"
+  feature: shared-lib
+  description: "Shared library: YAML parser, XML builder/formatters e parsers TS/JS via oxc"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal:
+    - feature: shared-types
+      reason: "Usa tipos de domínio (Contract, Result, CompileError, etc.) para as funções"
+  external:
+    - package: yaml
+      version: "^2.7.1"
+      reason: "Parse e serialize de YAML via parseYaml/stringifyYaml"
+    - package: oxc-parser
+      version: "^0.65.0"
+      reason: "Parser TS/JS para extrair signatures reais do código"
+    - package: es-module-lexer
+      version: "^1.6.0"
+      reason: "Análise rápida de imports e exports de módulos"
+
+exports:
+  functions:
+    - name: parseYaml
+      signature: "(content: string, filePath = \"<inline>\") => Result<T, CompileError[]>"
+      description: "Parseia string YAML em objeto tipado, retornando Result (generic <T>)"
+      pure: true
+    - name: loadYamlFile
+      signature: "(path: string) => Promise<Result<T, CompileError[]>>"
+      description: "Carrega arquivo YAML do disco e parseia (generic <T>)"
+      pure: false
+    - name: stringifyYaml
+      signature: "(obj: unknown) => string"
+      description: "Serializa objeto em string YAML"
+      pure: true
+    - name: escapeXml
+      signature: "(str: string) => string"
+      description: "Escapa caracteres especiais para XML"
+      pure: true
+    - name: xmlElement
+      signature: "(tag: string, attrs?: Record<string, string | number | boolean>, children?: string) => string"
+      description: "Cria um elemento XML"
+      pure: true
+    - name: xmlDocument
+      signature: "(rootContent: string) => string"
+      description: "Envolve conteúdo XML com declaração <?xml?>"
+      pure: true
+    - name: toXml
+      signature: "(data: unknown, tag: string) => string"
+      description: "Serializa objeto JS para XML genérico (fallback)"
+      pure: true
+    - name: xmlSuccess
+      signature: "(tool: string, content: string) => string"
+      description: "Wrapper XML de sucesso para respostas de tools MCP"
+      pure: true
+    - name: xmlError
+      signature: "(tool: string, code: string, message: string) => string"
+      description: "Wrapper XML de erro para respostas de tools MCP"
+      pure: true
+    - name: formatContract
+      signature: "(c: Contract) => string"
+      description: "Formata um Contract em XML compacto otimizado para AI"
+      pure: true
+    - name: formatCompileResult
+      signature: "(result: CompileResult) => string"
+      description: "Formata CompileResult em XML"
+      pure: true
+    - name: formatValidationResult
+      signature: "(r: ValidationResult) => string"
+      description: "Formata ValidationResult em XML"
+      pure: true
+    - name: formatValidationResults
+      signature: "(results: ValidationResult[]) => string"
+      description: "Formata lista de ValidationResult em XML agregado"
+      pure: true
+    - name: formatIndex
+      signature: "(index: Index) => string"
+      description: "Formata Index em XML"
+      pure: true
+    - name: formatDriftReport
+      signature: "(report: DriftReport) => string"
+      description: "Formata DriftReport em XML"
+      pure: true
+    - name: formatBlastRadius
+      signature: "(radius: BlastRadius) => string"
+      description: "Formata BlastRadius em XML com levels e risk score"
+      pure: true
+    - name: formatCheckCommitResult
+      signature: "(result: CheckCommitResult) => string"
+      description: "Formata CheckCommitResult em XML"
+      pure: true
+    - name: formatCommunityReport
+      signature: "(report: CommunityReport) => string"
+      description: "Formata CommunityReport em XML com communities, hubs, bridges"
+      pure: true
+    - name: initParsers
+      signature: "() => Promise<void>"
+      description: "Inicializa es-module-lexer (singleton)"
+      pure: false
+    - name: parseTypeScript
+      signature: "(filename: string, code: string) => ParseResult"
+      description: "Wrapper oxc-parser parseSync"
+      pure: true
+    - name: analyzeImports
+      signature: "(code: string) => ImportInfo[]"
+      description: "Extrai lista de imports via es-module-lexer"
+      pure: true
+    - name: analyzeExports
+      signature: "(code: string) => ExportInfo[]"
+      description: "Extrai lista de exports via es-module-lexer"
+      pure: true
+    - name: extractSignatures
+      signature: "(filename: string, code: string) => SignatureResult"
+      description: "Extrai assinaturas completas de funções exportadas via oxc-parser AST"
+      pure: true
+    - name: normalizeSignature
+      signature: "(sig: string) => string"
+      description: "Normaliza string de signature para comparação cosmética-agnóstica"
+      pure: true
+  types:
+    - name: ImportInfo
+      description: "Info de um import estático/dinâmico"
+    - name: ExportInfo
+      description: "Info de um export com nome e nome local"
+    - name: SignatureResult
+      description: "Resultado de extractSignatures: mapa nome→signature + re-exports"
+    - name: ReExportInfo
+      description: "Info de re-export: nome + source module"
+
+rules:
+  - id: no-business-logic
+    description: "shared-lib não contém lógica de negócio, apenas utilitários"
+    severity: error
+    testable: true
+  - id: pure-when-possible
+    description: "Funções devem ser pure, exceto loadYamlFile e initParsers (I/O)"
+    severity: warning
+    testable: true
+  - id: yaml-in-xml-out
+    description: "YAML apenas como input, XML apenas como output para AI"
+    severity: info
+    testable: false
+  - id: token-efficient-xml
+    description: "Formatters XML devem priorizar atributos compactos sobre elementos aninhados"
+    severity: warning
+    testable: false
+
+files:
+  - path: src/shared/lib/index.ts
+    purpose: "Barrel export consolidando yaml, xml e parsers"
+  - path: src/shared/lib/yaml.ts
+    purpose: "Wrappers do yaml npm com tratamento de erros via Result"
+  - path: src/shared/lib/xml.ts
+    purpose: "Builders XML e formatters contract-aware otimizados para AI"
+  - path: src/shared/lib/parsers.ts
+    purpose: "Wrappers oxc-parser e es-module-lexer com extração de signatures"

@@ -1,0 +1,57 @@
+contract:
+  version: "1.0.0"
+  feature: shared-config
+  description: "Constants e defaults do projeto: paths, patterns e diretórios ignorados"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal: []
+  external: []
+
+exports:
+  functions:
+    - name: isIgnoredPath
+      signature: "(filePath: string) => boolean"
+      description: "Retorna true se o path contém algum dos diretórios ignorados"
+      pure: true
+  types: []
+
+types:
+  - name: Config
+    description: "Constantes exportadas"
+    fields:
+      - name: DEFAULT_CONTRACTS_DIR
+        type: string
+        required: true
+        description: "Diretório padrão dos contratos (default: contracts)"
+      - name: DEFAULT_INDEX_PATH
+        type: string
+        required: true
+        description: "Path padrão do índice YAML (default: contracts/index.yaml)"
+      - name: DEFAULT_SCHEMA_DIR
+        type: string
+        required: true
+        description: "Diretório dos meta-schemas (default: contracts/_schema)"
+      - name: CONTRACT_FILE_PATTERN
+        type: string
+        required: true
+        description: "Glob pattern dos arquivos de contrato (default: *.contract.yaml)"
+      - name: IGNORED_DIRS
+        type: "string[]"
+        required: true
+        description: "Lista de substrings que indicam diretórios a ignorar no scan"
+
+rules:
+  - id: centralized-constants
+    description: "Todas as constantes globais do projeto devem estar aqui; evitar magic strings"
+    severity: error
+    testable: true
+  - id: ignored-dirs-include-common-build-artifacts
+    description: "IGNORED_DIRS deve cobrir node_modules, dist, build, .git, coverage e caches de frameworks"
+    severity: warning
+    testable: true
+
+files:
+  - path: src/shared/config/index.ts
+    purpose: "Constantes do projeto e helper isIgnoredPath"

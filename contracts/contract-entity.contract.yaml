@@ -6,7 +6,11 @@ contract:
   status: draft
 
 dependencies:
-  internal: []
+  internal:
+    - feature: shared-lib
+      reason: "loadYamlFile para carregar arquivos .contract.yaml"
+    - feature: shared-types
+      reason: "Tipos Contract, CompileError, Result, Severity, ContractStatus"
   external:
     - package: yaml
       version: "^2.7.1"

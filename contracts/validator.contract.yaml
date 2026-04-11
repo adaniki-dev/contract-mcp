@@ -13,6 +13,12 @@ dependencies:
       reason: "Usa tipos de domínio dos contratos"
     - feature: dependency-graph
       reason: "Usa DependencyGraph para detectar dependências circulares"
+    - feature: shared-lib
+      reason: "Usa initParsers, analyzeImports, analyzeExports, extractSignatures e normalizeSignature"
+    - feature: shared-config
+      reason: "Constantes DEFAULT_CONTRACTS_DIR e isIgnoredPath"
+    - feature: shared-types
+      reason: "Tipos ValidationResult, Violation, Contract, Result"
   external:
     - package: oxc-parser
       version: "^0.65.0"

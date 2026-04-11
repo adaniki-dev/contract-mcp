@@ -9,6 +9,10 @@ dependencies:
   internal:
     - feature: contract-entity
       reason: "Usa tipos e parser de contratos do domínio"
+    - feature: shared-config
+      reason: "Constantes DEFAULT_CONTRACTS_DIR, CONTRACT_FILE_PATTERN e isIgnoredPath"
+    - feature: shared-types
+      reason: "Tipos Contract, CompileResult, CompileError, Result, Diagnostic"
   external:
     - package: yaml
       version: "^2.7.1"

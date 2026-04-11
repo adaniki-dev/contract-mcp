@@ -11,6 +11,12 @@ dependencies:
       reason: "Precisa compilar os contratos para extrair metadata"
     - feature: contract-entity
       reason: "Usa tipos de domínio dos contratos"
+    - feature: shared-lib
+      reason: "loadYamlFile e stringifyYaml para ler/escrever o index"
+    - feature: shared-config
+      reason: "Constantes DEFAULT_CONTRACTS_DIR, DEFAULT_INDEX_PATH, CONTRACT_FILE_PATTERN"
+    - feature: shared-types
+      reason: "Tipos Index, IndexEntry, IndexError, DriftReport, Result, Contract"
   external: []
 
 exports:

@@ -13,6 +13,12 @@ dependencies:
       reason: "Precisa dos resultados de validação"
     - feature: indexer
       reason: "Usa o índice para visão geral"
+    - feature: dependency-graph
+      reason: "Usa detectCommunities e analyzeStructure para colorir nodes por cluster"
+    - feature: shared-config
+      reason: "Constante DEFAULT_CONTRACTS_DIR"
+    - feature: shared-types
+      reason: "Tipos DashboardData, FeatureSummary, Contract, ValidationResult"
   external: []
 
 exports:

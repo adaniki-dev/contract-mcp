@@ -17,6 +17,14 @@ dependencies:
       reason: "Inicia dashboard web junto com o MCP server"
     - feature: check-commit
       reason: "Tools check_commit e install_hook usam a lógica de check-commit"
+    - feature: dependency-graph
+      reason: "Tools get_dependencies, blast_radius e analyze_structure usam o grafo"
+    - feature: shared-lib
+      reason: "Formatters XML, parseYaml/stringifyYaml e escapeXml para todos os tools"
+    - feature: shared-config
+      reason: "Constante DEFAULT_CONTRACTS_DIR para resolução de paths"
+    - feature: shared-types
+      reason: "Tipos de todos os contratos, blast radius, community, etc."
   external:
     - package: "@modelcontextprotocol/sdk"
       version: "^1.12.1"

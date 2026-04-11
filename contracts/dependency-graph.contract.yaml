@@ -6,7 +6,9 @@ contract:
   status: draft
 
 dependencies:
-  internal: []
+  internal:
+    - feature: shared-types
+      reason: "Tipos Contract, Community, FeatureClassification, CommunityReport, NodeRole"
   external: []
 
 exports:

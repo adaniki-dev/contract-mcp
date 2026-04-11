@@ -1,0 +1,122 @@
+contract:
+  version: "1.0.0"
+  feature: shared-types
+  description: "Definições de tipos TypeScript compartilhadas em todo o projeto"
+  owner: adam
+  status: draft
+
+dependencies:
+  internal: []
+  external: []
+
+exports:
+  functions: []
+  types:
+    - name: Severity
+      description: "Nível de severidade: error | warning | info"
+    - name: ContractStatus
+      description: "Status do ciclo de vida de um contrato: draft | active | deprecated"
+    - name: Result
+      description: "Pattern Result<T, E> discriminado por ok: true/false"
+    - name: Contract
+      description: "Contrato completo de uma feature"
+    - name: ContractMeta
+      description: "Metadata do contrato: version, feature, description, owner, status"
+    - name: InternalDep
+      description: "Dependência interna com feature e reason"
+    - name: ExternalDep
+      description: "Dependência externa: package, version, reason"
+    - name: ContractDependencies
+      description: "Wrapper com internal e external deps"
+    - name: FunctionExport
+      description: "Export de função com signature e pure flag"
+    - name: TypeExport
+      description: "Export de tipo com nome e descrição"
+    - name: ContractExports
+      description: "Wrapper com functions e types exportados"
+    - name: Endpoint
+      description: "Endpoint MCP com tool, input, output, errors"
+    - name: TypeField
+      description: "Campo de um tipo de domínio"
+    - name: ContractType
+      description: "Tipo de domínio declarado no contrato"
+    - name: Rule
+      description: "Regra de negócio com id, severity e testable flag"
+    - name: ContractFile
+      description: "Arquivo declarado no contrato: path + purpose"
+    - name: CompileResult
+      description: "Resultado da compilação: contracts + diagnostics"
+    - name: CompileError
+      description: "Erro de compilação com path, message, severity, line"
+    - name: Diagnostic
+      description: "Diagnóstico individual: rule, message, severity, path"
+    - name: ValidationResult
+      description: "Resultado da validação de uma feature"
+    - name: ValidationError
+      description: "Erro do processo de validação"
+    - name: Violation
+      description: "Violação encontrada no código"
+    - name: Index
+      description: "Índice agregado de todos os contratos"
+    - name: IndexEntry
+      description: "Entrada individual no índice"
+    - name: IndexError
+      description: "Erro na geração do índice"
+    - name: DriftReport
+      description: "Relatório de drift entre índice e contratos reais"
+    - name: DashboardData
+      description: "Dados agregados para renderização do dashboard"
+    - name: FeatureSummary
+      description: "Resumo de uma feature para o dashboard"
+    - name: DashboardError
+      description: "Erro durante geração do dashboard"
+    - name: BlastRadius
+      description: "Relatório de blast radius com levels, risk score e severity"
+    - name: BlastRadiusLevel
+      description: "Features afetadas em uma profundidade específica"
+    - name: BlastRadiusFeature
+      description: "Feature afetada no blast radius com critical flag"
+    - name: BlastDirection
+      description: "Direção do blast: upstream ou downstream"
+    - name: RiskLevel
+      description: "Nível de risco: low | medium | high"
+    - name: BlastRadiusError
+      description: "Erro durante cálculo de blast radius"
+    - name: CheckCommitResult
+      description: "Resultado da validação pre-commit"
+    - name: CheckCommitError
+      description: "Erro do check-commit (git, compile, etc)"
+    - name: AffectedFeature
+      description: "Feature afetada por arquivos staged"
+    - name: Community
+      description: "Comunidade (cluster) no grafo de dependências"
+    - name: FeatureClassification
+      description: "Classificação de uma feature: role + community + degree"
+    - name: CommunityReport
+      description: "Relatório completo de análise estrutural do grafo"
+    - name: NodeRole
+      description: "Role de um node no grafo: orphan | bridge | hub | leaf | member"
+    - name: McpToolInput
+      description: "Discriminated union dos inputs de tools MCP"
+    - name: McpToolOutput
+      description: "Output de tools MCP (content + isError)"
+
+rules:
+  - id: single-source-of-truth
+    description: "Todos os tipos de domínio do projeto devem estar aqui; evitar definições duplicadas"
+    severity: error
+    testable: true
+  - id: no-runtime-code
+    description: "Arquivo de tipos não pode conter funções ou constantes runtime, apenas type/interface"
+    severity: error
+    testable: true
+  - id: strict-types
+    description: "Nenhum 'any' — usar unknown quando o tipo é genuinamente desconhecido"
+    severity: error
+    testable: true
+
+files:
+  - path: src/shared/types/contract.types.ts
+    purpose: "Tipos de domínio: Contract, Result, Violation, Index, BlastRadius, Community, etc."
+  - path: src/shared/types/mcp.types.ts
+    purpose: "Tipos específicos do protocolo MCP: McpToolInput/Output e error codes"
