@@ -111,9 +111,119 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     font-style: italic;
   }
 
-  .graph-legend {
+  .graph-hud {
     position: absolute;
     top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(22, 27, 34, 0.92);
+    border: 1px solid #30363d;
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.75rem;
+    color: #c9d1d9;
+    backdrop-filter: blur(4px);
+    z-index: 5;
+  }
+
+  .graph-hud__stat {
+    color: #8b949e;
+    padding: 0 0.375rem;
+  }
+  .graph-hud__stat strong { color: #c9d1d9; }
+
+  .graph-hud__sep {
+    width: 1px;
+    height: 16px;
+    background: #30363d;
+  }
+
+  .graph-hud__btn {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    border-radius: 6px;
+    padding: 0.3rem 0.625rem;
+    font-size: 0.6875rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 150ms;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .graph-hud__btn:hover {
+    background: #1c2128;
+    border-color: #58a6ff;
+    color: #58a6ff;
+  }
+  .graph-hud__btn.active {
+    background: #58a6ff22;
+    border-color: #58a6ff;
+    color: #58a6ff;
+  }
+
+  .graph-hud__select {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    border-radius: 6px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.6875rem;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+  }
+
+  .graph-search {
+    position: absolute;
+    top: 12px;
+    right: 260px;
+    z-index: 5;
+  }
+  .graph-search input {
+    background: rgba(22, 27, 34, 0.92);
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.75rem;
+    font-family: ui-monospace, monospace;
+    width: 180px;
+    outline: none;
+    backdrop-filter: blur(4px);
+  }
+  .graph-search input:focus {
+    border-color: #58a6ff;
+  }
+
+  .graph-minimap {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    width: 180px;
+    height: 130px;
+    background: rgba(13, 17, 23, 0.85);
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    overflow: hidden;
+    backdrop-filter: blur(4px);
+    z-index: 5;
+    pointer-events: none;
+  }
+  .graph-minimap canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .graph-legend {
+    position: absolute;
+    top: 64px;
     right: 12px;
     background: rgba(22, 27, 34, 0.92);
     border: 1px solid #30363d;
@@ -123,8 +233,8 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     color: #c9d1d9;
     font-family: ui-monospace, monospace;
     max-width: 240px;
-    pointer-events: none;
     backdrop-filter: blur(4px);
+    z-index: 4;
   }
 
   .graph-legend .legend-title {
@@ -141,6 +251,16 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 0.25rem;
+    cursor: pointer;
+    padding: 0.15rem 0.25rem;
+    border-radius: 4px;
+    transition: background 120ms;
+  }
+  .graph-legend .legend-item:hover {
+    background: rgba(88, 166, 255, 0.1);
+  }
+  .graph-legend .legend-item.dim {
+    opacity: 0.35;
   }
 
   .graph-legend .legend-swatch {
@@ -177,9 +297,34 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
 
 <div class="graph-container">
   <canvas id="graph-canvas"></canvas>
+
+  <div class="graph-hud" id="graph-hud">
+    <span class="graph-hud__stat"><strong id="hud-nodes">0</strong> features</span>
+    <span class="graph-hud__stat"><strong id="hud-communities">0</strong> communities</span>
+    <span class="graph-hud__stat">mod <strong id="hud-mod">0</strong></span>
+    <span class="graph-hud__sep"></span>
+    <button class="graph-hud__btn" id="btn-show-orphans">hide orphans</button>
+    <button class="graph-hud__btn" id="btn-hubs-only">hubs only</button>
+    <select class="graph-hud__select" id="community-select">
+      <option value="">all communities</option>
+    </select>
+    <span class="graph-hud__sep"></span>
+    <button class="graph-hud__btn" id="btn-reset">reset view</button>
+    <button class="graph-hud__btn" id="btn-relayout">re-layout</button>
+  </div>
+
+  <div class="graph-search">
+    <input type="text" id="graph-search-input" placeholder="Search feature..." />
+  </div>
+
   <div class="graph-tooltip" id="graph-tooltip"></div>
   <div class="graph-legend" id="graph-legend"></div>
-  <div class="graph-hint">drag nodes · wheel to zoom · middle-click drag to pan · click node to open</div>
+
+  <div class="graph-minimap">
+    <canvas id="minimap-canvas"></canvas>
+  </div>
+
+  <div class="graph-hint">drag nodes · wheel to zoom · shift+drag to pan · click node to open</div>
 </div>
 
 <script>
@@ -249,30 +394,177 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     };
   });
 
-  // Build legend
-  function renderLegend() {
-    const counts = {};
-    for (const n of simNodes) {
-      counts[n.community] = (counts[n.community] || 0) + 1;
+  const nodeMap = {};
+  simNodes.forEach(function (n) { nodeMap[n.id] = n; });
+
+  const simEdges = raw.edges.map(function (e) {
+    return { from: e.from, to: e.to, reason: e.reason };
+  });
+
+  // === Filter & view state ===
+  const filterState = {
+    hideOrphans: false,
+    hubsOnly: false,
+    community: "",  // empty = all
+    searchMatch: null,  // node id or null
+  };
+
+  function isNodeVisible(n) {
+    if (filterState.hideOrphans && n.role === "orphan") return false;
+    if (filterState.community && n.community !== filterState.community) return false;
+    if (filterState.hubsOnly) {
+      if (n.role === "hub") return true;
+      // Show direct neighbors of hubs too
+      for (let i = 0; i < simEdges.length; i++) {
+        const e = simEdges[i];
+        if (e.from === n.id) {
+          const tgt = nodeMap[e.to];
+          if (tgt && tgt.role === "hub") return true;
+        }
+        if (e.to === n.id) {
+          const src = nodeMap[e.from];
+          if (src && src.role === "hub") return true;
+        }
+      }
+      return false;
     }
-    const entries = Object.entries(counts).sort(function (a, b) { return b[1] - a[1]; });
-    let html = '<div class="legend-title">Communities (' + entries.length + ')</div>';
-    for (const [label, cnt] of entries) {
-      html += '<div class="legend-item">';
+    return true;
+  }
+
+  function isEdgeVisible(e) {
+    const s = nodeMap[e.from];
+    const t = nodeMap[e.to];
+    if (!s || !t) return false;
+    return isNodeVisible(s) && isNodeVisible(t);
+  }
+
+  // === Community counts ===
+  const communityCounts = {};
+  for (const n of simNodes) {
+    communityCounts[n.community] = (communityCounts[n.community] || 0) + 1;
+  }
+  const communityEntries = Object.entries(communityCounts).sort(function (a, b) {
+    return b[1] - a[1];
+  });
+
+  // === HUD ===
+  const hudNodes = document.getElementById("hud-nodes");
+  const hudCommunities = document.getElementById("hud-communities");
+  const hudMod = document.getElementById("hud-mod");
+  hudNodes.textContent = simNodes.length;
+  hudCommunities.textContent = communityEntries.length;
+
+  // Approximate modularity: read from a global if injected, else compute simple ratio
+  (function () {
+    let within = 0, total = 0;
+    for (const e of simEdges) {
+      const s = nodeMap[e.from];
+      const t = nodeMap[e.to];
+      if (!s || !t) continue;
+      total++;
+      if (s.community === t.community) within++;
+    }
+    const approx = total === 0 ? 0 : (within / total - 0.5);
+    hudMod.textContent = approx.toFixed(2);
+  })();
+
+  // Populate community select
+  const communitySelect = document.getElementById("community-select");
+  for (const [label, cnt] of communityEntries) {
+    const opt = document.createElement("option");
+    opt.value = label;
+    opt.textContent = label + " (" + cnt + ")";
+    communitySelect.appendChild(opt);
+  }
+
+  // === Legend (clickable) ===
+  function renderLegend() {
+    let html = '<div class="legend-title">Communities (' + communityEntries.length + ')</div>';
+    for (const [label, cnt] of communityEntries) {
+      const dimClass = filterState.community && filterState.community !== label ? " dim" : "";
+      html += '<div class="legend-item' + dimClass + '" data-community="' + label + '">';
       html += '<div class="legend-swatch" style="background:' + communityColor(label) + '"></div>';
       html += '<span class="legend-label">' + label + '</span>';
       html += '<span class="legend-count">(' + cnt + ')</span>';
       html += '</div>';
     }
     legendEl.innerHTML = html;
+    // Wire clicks
+    const items = legendEl.querySelectorAll(".legend-item");
+    items.forEach(function (el) {
+      el.addEventListener("click", function () {
+        const label = el.getAttribute("data-community");
+        if (filterState.community === label) {
+          filterState.community = "";
+        } else {
+          filterState.community = label;
+        }
+        communitySelect.value = filterState.community;
+        renderLegend();
+        settled = false;
+      });
+    });
   }
   renderLegend();
 
-  const nodeMap = {};
-  simNodes.forEach(function (n) { nodeMap[n.id] = n; });
+  // === HUD controls ===
+  const btnShowOrphans = document.getElementById("btn-show-orphans");
+  const btnHubsOnly = document.getElementById("btn-hubs-only");
+  const btnReset = document.getElementById("btn-reset");
+  const btnRelayout = document.getElementById("btn-relayout");
 
-  const simEdges = raw.edges.map(function (e) {
-    return { from: e.from, to: e.to, reason: e.reason };
+  btnShowOrphans.addEventListener("click", function () {
+    filterState.hideOrphans = !filterState.hideOrphans;
+    btnShowOrphans.classList.toggle("active", filterState.hideOrphans);
+    btnShowOrphans.textContent = filterState.hideOrphans ? "show orphans" : "hide orphans";
+    settled = false;
+  });
+  btnHubsOnly.addEventListener("click", function () {
+    filterState.hubsOnly = !filterState.hubsOnly;
+    btnHubsOnly.classList.toggle("active", filterState.hubsOnly);
+    settled = false;
+  });
+  communitySelect.addEventListener("change", function () {
+    filterState.community = communitySelect.value;
+    renderLegend();
+    settled = false;
+  });
+  btnReset.addEventListener("click", function () {
+    viewScale = 1;
+    viewX = 0;
+    viewY = 0;
+    settled = false;
+  });
+  btnRelayout.addEventListener("click", function () {
+    initPositions();
+    simNodes.forEach(function (n) { n.vx = 0; n.vy = 0; n.pinned = false; });
+    frame = 0;
+    settled = false;
+  });
+
+  // === Search ===
+  const searchInput = document.getElementById("graph-search-input");
+  searchInput.addEventListener("input", function () {
+    const q = searchInput.value.trim().toLowerCase();
+    if (!q) {
+      filterState.searchMatch = null;
+      return;
+    }
+    const match = simNodes.find(function (n) {
+      return n.id.toLowerCase().indexOf(q) !== -1;
+    });
+    if (match) {
+      filterState.searchMatch = match.id;
+      // Center viewport on the node
+      const c = centerXY();
+      viewX = c.cx - match.x * viewScale;
+      viewY = c.cy - match.y * viewScale;
+    }
+  });
+  searchInput.addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter" && filterState.searchMatch) {
+      window.location.href = "/project?feature=" + encodeURIComponent(filterState.searchMatch);
+    }
   });
 
   function resize() {
@@ -414,6 +706,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   function nodeAt(mx, my) {
     for (var i = simNodes.length - 1; i >= 0; i--) {
       var n = simNodes[i];
+      if (!isNodeVisible(n)) continue;
       var hw = n.w / 2;
       var hh = n.h / 2;
       if (mx >= n.x - hw && mx <= n.x + hw && my >= n.y - hh && my <= n.y + hh) {
@@ -427,6 +720,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     var threshold = 6;
     for (var i = 0; i < simEdges.length; i++) {
       var e = simEdges[i];
+      if (!isEdgeVisible(e)) continue;
       var s = nodeMap[e.from];
       var t = nodeMap[e.to];
       if (!s || !t) continue;
@@ -527,8 +821,12 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       highlightSet[hoveredNode.id] = true;
     }
 
+    // Pulse phase for hub halo
+    var hubPulse = 0.5 + 0.5 * Math.sin(frame * 0.04);
+
     for (var i = 0; i < simEdges.length; i++) {
       var e = simEdges[i];
+      if (!isEdgeVisible(e)) continue;
       var s = nodeMap[e.from];
       var t = nodeMap[e.to];
       if (!s || !t) continue;
@@ -553,6 +851,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
 
     for (var j = 0; j < simNodes.length; j++) {
       var n = simNodes[j];
+      if (!isNodeVisible(n)) continue;
       var nx = n.x - n.w / 2;
       var ny = n.y - n.h / 2;
       var fillColor = communityColor(n.community);
@@ -562,8 +861,37 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       if (highlightSet && !highlightSet[n.id]) {
         alpha = DIM_ALPHA;
       }
+      if (n.role === "orphan") {
+        alpha = Math.min(alpha, 0.6);
+      }
+
+      // Search match highlight
+      var isSearchMatch = filterState.searchMatch === n.id;
 
       ctx.globalAlpha = alpha;
+
+      // Hub pulsing halo
+      if (n.role === "hub") {
+        ctx.save();
+        ctx.globalAlpha = alpha * (0.15 + 0.15 * hubPulse);
+        var halo = 6 + 4 * hubPulse;
+        ctx.strokeStyle = "#d29a28";
+        ctx.lineWidth = halo;
+        roundRect(nx - halo, ny - halo, n.w + halo * 2, n.h + halo * 2, 10);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Search match aura
+      if (isSearchMatch) {
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = "#58a6ff";
+        ctx.lineWidth = 4;
+        roundRect(nx - 8, ny - 8, n.w + 16, n.h + 16, 10);
+        ctx.stroke();
+        ctx.restore();
+      }
 
       ctx.shadowColor = fillColor;
       ctx.shadowBlur = 14;
@@ -576,7 +904,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
 
       ctx.shadowBlur = 0;
 
-      // Border thickness reflects role: hub=3, bridge=2, leaf=1, member/orphan=1
+      // Border thickness reflects role
       var borderWidth = n.role === "hub" ? 3 : n.role === "bridge" ? 2.5 : 1.5;
       roundRect(nx, ny, n.w, n.h, 6);
       ctx.strokeStyle = borderColor;
@@ -598,8 +926,72 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       }
       ctx.fillText(label, n.x, n.y);
 
+      // Role icon for hubs/bridges (small, top-right)
+      if (n.role === "hub" || n.role === "bridge") {
+        ctx.font = "11px ui-monospace, monospace";
+        var icon = n.role === "hub" ? "⚡" : "🌉";
+        ctx.fillStyle = n.role === "hub" ? "#d29a28" : "#f85149";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "top";
+        ctx.fillText(icon, nx + n.w - 4, ny + 3);
+      }
+
       ctx.globalAlpha = 1;
     }
+  }
+
+  // === Minimap ===
+  const minimapCanvas = document.getElementById("minimap-canvas");
+  const minimapCtx = minimapCanvas.getContext("2d");
+  function drawMinimap() {
+    var rect = minimapCanvas.getBoundingClientRect();
+    var dpr = window.devicePixelRatio || 1;
+    minimapCanvas.width = rect.width * dpr;
+    minimapCanvas.height = rect.height * dpr;
+    minimapCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    minimapCtx.clearRect(0, 0, rect.width, rect.height);
+    minimapCtx.fillStyle = "rgba(13, 17, 23, 0)";
+    minimapCtx.fillRect(0, 0, rect.width, rect.height);
+
+    // Compute bounds of all nodes
+    var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (var i = 0; i < simNodes.length; i++) {
+      var n = simNodes[i];
+      if (!isNodeVisible(n)) continue;
+      if (n.x - n.w / 2 < minX) minX = n.x - n.w / 2;
+      if (n.y - n.h / 2 < minY) minY = n.y - n.h / 2;
+      if (n.x + n.w / 2 > maxX) maxX = n.x + n.w / 2;
+      if (n.y + n.h / 2 > maxY) maxY = n.y + n.h / 2;
+    }
+    if (!isFinite(minX)) return;
+    var pad = 40;
+    minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+    var w = maxX - minX, h = maxY - minY;
+    var sx = rect.width / w, sy = rect.height / h;
+    var s = Math.min(sx, sy);
+    var ox = (rect.width - w * s) / 2 - minX * s;
+    var oy = (rect.height - h * s) / 2 - minY * s;
+
+    // Draw nodes as small dots
+    for (var j = 0; j < simNodes.length; j++) {
+      var nn = simNodes[j];
+      if (!isNodeVisible(nn)) continue;
+      minimapCtx.fillStyle = communityColor(nn.community);
+      var r = nn.role === "hub" ? 3 : 2;
+      minimapCtx.beginPath();
+      minimapCtx.arc(nn.x * s + ox, nn.y * s + oy, r, 0, Math.PI * 2);
+      minimapCtx.fill();
+    }
+
+    // Draw viewport rectangle
+    var canvasRect = canvas.getBoundingClientRect();
+    var vx = (-viewX / viewScale) * s + ox;
+    var vy = (-viewY / viewScale) * s + oy;
+    var vw = (canvasRect.width / viewScale) * s;
+    var vh = (canvasRect.height / viewScale) * s;
+    minimapCtx.strokeStyle = "#58a6ff";
+    minimapCtx.lineWidth = 1.5;
+    minimapCtx.strokeRect(vx, vy, vw, vh);
   }
 
   function showNodeTooltip(n, mx, my) {
@@ -798,12 +1190,9 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     }
 
     draw();
+    drawMinimap();
 
-    if (settled && !dragNode && !hoveredNode) {
-      requestAnimationFrame(tick);
-    } else {
-      requestAnimationFrame(tick);
-    }
+    requestAnimationFrame(tick);
   }
 
   requestAnimationFrame(tick);
