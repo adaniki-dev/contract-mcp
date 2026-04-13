@@ -1,14 +1,51 @@
 {
-  "name": "contract-mcp",
+  "name": "@adaniki/contract-agent-linter",
   "version": "0.1.0",
+  "description": "MCP server that acts as a contract linter for AI agents. Understand projects through structured YAML contracts instead of reading raw files.",
   "type": "module",
-  "main": "src/app/index.ts",
+  "main": "dist/server.js",
+  "bin": {
+    "contract-agent-linter": "dist/server.js",
+    "contract-agent-linter-check": "dist/check-commit.js"
+  },
+  "files": [
+    "dist/",
+    "contracts/_schema/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "bun run src/app/index.ts",
-    "build": "bun build src/app/index.ts --outdir dist --target bun",
+    "build": "bun run scripts/build.ts",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "contract",
+    "linter",
+    "ai",
+    "claude",
+    "yaml",
+    "architecture",
+    "dependency-graph",
+    "validation"
+  ],
+  "author": "adaniki-dev",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/adaniki-dev/contract-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/adaniki-dev/contract-mcp/issues"
+  },
+  "homepage": "https://github.com/adaniki-dev/contract-mcp#readme",
+  "engines": {
+    "bun": ">=1.0.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
