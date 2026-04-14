@@ -234,17 +234,23 @@ async function checkFilesExist(
   return violations;
 }
 
+interface DepCheckResult {
+  violations: Violation[];
+  matchedDeps: string[];   // declared deps confirmed by code imports
+  inferredDeps: string[];  // code imports not declared in contract
+}
+
 /**
  * Check deps-declared and no-cross-feature-imports rules:
  * Imports from @features/X are only allowed if X is in dependencies.internal.
+ * Also tracks which declared deps are confirmed and which imports are undeclared.
  */
 async function checkDependencyImports(
   contract: Contract,
   projectRoot: string
-): Promise<Violation[]> {
+): Promise<DepCheckResult> {
   const violations: Violation[] = [];
   const feature = contract.contract.feature;
-  // Derive feature directory from contract files, fallback to convention
   const barrelPath = findBarrelPath(contract, projectRoot);
   const featureDir = join(barrelPath, "..");
 
@@ -252,12 +258,14 @@ async function checkDependencyImports(
     contract.dependencies.internal.map((d) => d.feature)
   );
 
+  const matched = new Set<string>();
+  const inferred = new Set<string>();
+
   let tsFiles: string[];
   try {
     tsFiles = await collectTsFiles(featureDir);
   } catch {
-    // Feature directory doesn't exist — skip this check
-    return violations;
+    return { violations, matchedDeps: [], inferredDeps: [] };
   }
 
   for (const filePath of tsFiles) {
@@ -269,7 +277,10 @@ async function checkDependencyImports(
     for (const imp of imports) {
       const importedFeature = extractFeatureFromImport(imp.source);
       if (importedFeature && importedFeature !== feature) {
-        if (!declaredDeps.has(importedFeature)) {
+        if (declaredDeps.has(importedFeature)) {
+          matched.add(importedFeature);
+        } else {
+          inferred.add(importedFeature);
           violations.push({
             rule: "deps-declared",
             message: `Import from "@features/${importedFeature}" is not declared in dependencies.internal`,
@@ -281,7 +292,11 @@ async function checkDependencyImports(
     }
   }
 
-  return violations;
+  return {
+    violations,
+    matchedDeps: [...matched],
+    inferredDeps: [...inferred],
+  };
 }
 
 /**
@@ -311,10 +326,12 @@ export async function validate(
 
   await initParsers();
 
+  const depCheck = await checkDependencyImports(contract, projectRoot);
+
   const violations: Violation[] = [
     ...(await checkExportsMatch(contract, projectRoot)),
     ...(await checkFilesExist(contract, projectRoot)),
-    ...(await checkDependencyImports(contract, projectRoot)),
+    ...depCheck.violations,
   ];
 
   return {
@@ -323,6 +340,8 @@ export async function validate(
       feature,
       valid: violations.length === 0,
       violations,
+      matchedDeps: depCheck.matchedDeps,
+      inferredDeps: depCheck.inferredDeps,
     },
   };
 }
@@ -374,17 +393,21 @@ export async function validateAll(
   for (const contract of contracts) {
     const feature = contract.contract.feature;
 
+    const depCheck = await checkDependencyImports(contract, projectRoot);
+
     const violations: Violation[] = [
       ...(cycleViolations.get(feature) ?? []),
       ...(await checkExportsMatch(contract, projectRoot)),
       ...(await checkFilesExist(contract, projectRoot)),
-      ...(await checkDependencyImports(contract, projectRoot)),
+      ...depCheck.violations,
     ];
 
     results.push({
       feature,
       valid: violations.length === 0,
       violations,
+      matchedDeps: depCheck.matchedDeps,
+      inferredDeps: depCheck.inferredDeps,
     });
   }
 

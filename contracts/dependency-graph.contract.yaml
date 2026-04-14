@@ -19,12 +19,12 @@ exports:
 
 types:
   - name: DependencyGraph
-    description: "Grafo de dependências entre features"
+    description: "Grafo de dependências entre features com edges ponderadas por confidence"
     fields:
-      - name: adjacency
-        type: "Map<string, string[]>"
+      - name: edges
+        type: "Map<string, WeightedEdge[]>"
         required: true
-        description: "Lista de adjacência — feature → suas dependências"
+        description: "Lista de adjacência ponderada — feature → edges com confidence score"
 
 rules:
   - id: pure-data-structure
@@ -40,7 +40,7 @@ rules:
     severity: error
     testable: true
   - id: blast-radius-levels
-    description: "getBlastRadiusLevels() deve retornar features agrupadas por profundidade usando BFS"
+    description: "getBlastRadiusLevels() deve retornar features agrupadas por profundidade usando BFS, com filtro opcional por minConfidence"
     severity: error
     testable: true
   - id: community-detection
@@ -49,6 +49,14 @@ rules:
     testable: true
   - id: structure-analysis
     description: "analyzeStructure() retorna communities, classifications, hubs, bridges, orphans e modularity"
+    severity: error
+    testable: true
+  - id: confidence-scoring
+    description: "Edges têm confidence 0.0-1.0. Default 0.8 (declarada), 1.0 (confirmada por import), 0.5 (inferida do código)"
+    severity: error
+    testable: true
+  - id: enrichment
+    description: "enrichWithValidation() cruza com resultados de validação para ajustar confidence das edges"
     severity: error
     testable: true
 

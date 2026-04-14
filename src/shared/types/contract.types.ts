@@ -16,6 +16,17 @@ export interface ContractMeta {
 export interface InternalDep {
   feature: string;
   reason: string;
+  confidence?: number; // 0.0-1.0, computed at validation time
+}
+
+export type EdgeSource = "declared" | "inferred";
+
+export interface WeightedEdge {
+  from: string;
+  to: string;
+  confidence: number;
+  reason: string;
+  source: EdgeSource;
 }
 
 export interface ExternalDep {
@@ -114,6 +125,8 @@ export interface ValidationResult {
   feature: string;
   valid: boolean;
   violations: Violation[];
+  matchedDeps?: string[];   // declared deps confirmed by code imports
+  inferredDeps?: string[];  // code imports not declared in contract
 }
 
 export interface ValidationError {
@@ -169,6 +182,7 @@ export interface BlastRadiusFeature {
   rulesCount: number;
   dependenciesCount: number;
   critical: boolean;
+  edgeConfidence?: number;
 }
 
 export interface BlastRadiusLevel {

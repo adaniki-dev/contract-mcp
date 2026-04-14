@@ -4,13 +4,15 @@ import type {
   Community,
   FeatureClassification,
   NodeRole,
+  WeightedEdge,
+  ValidationResult,
 } from "@shared/types/contract.types";
 
 export class DependencyGraph {
-  private adjacency: Map<string, string[]>;
+  private edges: Map<string, WeightedEdge[]>;
 
   private constructor() {
-    this.adjacency = new Map();
+    this.edges = new Map();
   }
 
   static fromContracts(contracts: Contract[]): DependencyGraph {
@@ -18,15 +20,75 @@ export class DependencyGraph {
 
     for (const contract of contracts) {
       const feature = contract.contract.feature;
-      const deps = contract.dependencies.internal.map((d) => d.feature);
-      graph.adjacency.set(feature, deps);
+      const weightedDeps: WeightedEdge[] = contract.dependencies.internal.map((d) => ({
+        from: feature,
+        to: d.feature,
+        confidence: d.confidence ?? 0.8,
+        reason: d.reason,
+        source: "declared" as const,
+      }));
+      graph.edges.set(feature, weightedDeps);
     }
 
     return graph;
   }
 
+  /**
+   * Enrich edge confidence using validation results.
+   * - Declared + import found in code → 1.0
+   * - Declared + no import found → stays 0.8
+   * - Import found but not declared → new edge with 0.5
+   */
+  enrichWithValidation(validations: ValidationResult[]): void {
+    for (const v of validations) {
+      const featureEdges = this.edges.get(v.feature);
+      if (!featureEdges) continue;
+
+      const matchedSet = new Set(v.matchedDeps ?? []);
+      const inferredList = v.inferredDeps ?? [];
+
+      // Bump declared deps that were confirmed by imports
+      for (const edge of featureEdges) {
+        if (matchedSet.has(edge.to)) {
+          edge.confidence = 1.0;
+        }
+      }
+
+      // Add inferred edges (imports not declared in contract)
+      const declaredTargets = new Set(featureEdges.map((e) => e.to));
+      for (const dep of inferredList) {
+        if (!declaredTargets.has(dep)) {
+          featureEdges.push({
+            from: v.feature,
+            to: dep,
+            confidence: 0.5,
+            reason: "inferred from code imports",
+            source: "inferred",
+          });
+        }
+      }
+    }
+  }
+
   getDependencies(feature: string): string[] {
-    return this.adjacency.get(feature) ?? [];
+    return (this.edges.get(feature) ?? []).map((e) => e.to);
+  }
+
+  getWeightedDependencies(feature: string): WeightedEdge[] {
+    return this.edges.get(feature) ?? [];
+  }
+
+  getEdgeConfidence(from: string, to: string): number {
+    const edge = (this.edges.get(from) ?? []).find((e) => e.to === to);
+    return edge?.confidence ?? 0;
+  }
+
+  getAllEdges(): WeightedEdge[] {
+    const all: WeightedEdge[] = [];
+    for (const edges of this.edges.values()) {
+      all.push(...edges);
+    }
+    return all;
   }
 
   getTransitiveDeps(feature: string): string[] {
@@ -49,7 +111,7 @@ export class DependencyGraph {
     const BLACK = 2;
 
     const color = new Map<string, number>();
-    for (const feature of this.adjacency.keys()) {
+    for (const feature of this.edges.keys()) {
       color.set(feature, WHITE);
     }
 
@@ -63,7 +125,6 @@ export class DependencyGraph {
         const depColor = color.get(dep);
 
         if (depColor === GRAY) {
-          // Found a cycle - extract it from path
           const cycleStart = path.indexOf(dep);
           const cycle = path.slice(cycleStart);
           cycles.push(cycle);
@@ -76,7 +137,7 @@ export class DependencyGraph {
       color.set(node, BLACK);
     };
 
-    for (const feature of this.adjacency.keys()) {
+    for (const feature of this.edges.keys()) {
       if (color.get(feature) === WHITE) {
         dfs(feature, []);
       }
@@ -97,11 +158,11 @@ export class DependencyGraph {
   }
 
   has(feature: string): boolean {
-    return this.adjacency.has(feature);
+    return this.edges.has(feature);
   }
 
   getFeatures(): string[] {
-    return [...this.adjacency.keys()];
+    return [...this.edges.keys()];
   }
 
   /**
@@ -109,8 +170,8 @@ export class DependencyGraph {
    */
   getDependents(feature: string): string[] {
     const dependents: string[] = [];
-    for (const [candidate, deps] of this.adjacency) {
-      if (deps.includes(feature)) {
+    for (const [candidate, edgeList] of this.edges) {
+      if (edgeList.some((e) => e.to === feature)) {
         dependents.push(candidate);
       }
     }
@@ -149,9 +210,9 @@ export class DependencyGraph {
    */
   private getTotalEdges(): number {
     const seen = new Set<string>();
-    for (const [from, deps] of this.adjacency) {
-      for (const to of deps) {
-        const key = [from, to].sort().join("|");
+    for (const [, edgeList] of this.edges) {
+      for (const e of edgeList) {
+        const key = [e.from, e.to].sort().join("|");
         seen.add(key);
       }
     }
@@ -164,7 +225,7 @@ export class DependencyGraph {
   private countComponents(): number {
     const visited = new Set<string>();
     let count = 0;
-    for (const feature of this.adjacency.keys()) {
+    for (const feature of this.edges.keys()) {
       if (visited.has(feature)) continue;
       count++;
       const queue = [feature];
@@ -252,16 +313,16 @@ export class DependencyGraph {
     const before = this.countComponents();
 
     // Temporarily detach the feature
-    const ownDeps = this.adjacency.get(feature);
-    this.adjacency.delete(feature);
+    const ownEdges = this.edges.get(feature);
+    this.edges.delete(feature);
 
-    const restore: Array<[string, string[]]> = [];
-    for (const [f, deps] of this.adjacency) {
-      if (deps.includes(feature)) {
-        restore.push([f, [...deps]]);
-        this.adjacency.set(
+    const restore: Array<[string, WeightedEdge[]]> = [];
+    for (const [f, edgeList] of this.edges) {
+      if (edgeList.some((e) => e.to === feature)) {
+        restore.push([f, [...edgeList]]);
+        this.edges.set(
           f,
-          deps.filter((x) => x !== feature)
+          edgeList.filter((e) => e.to !== feature)
         );
       }
     }
@@ -269,11 +330,9 @@ export class DependencyGraph {
     const after = this.countComponents();
 
     // Restore
-    if (ownDeps) this.adjacency.set(feature, ownDeps);
-    for (const [f, deps] of restore) this.adjacency.set(f, deps);
+    if (ownEdges) this.edges.set(feature, ownEdges);
+    for (const [f, edgeList] of restore) this.edges.set(f, edgeList);
 
-    // feature itself was removed so after excludes it; we want to know if
-    // its neighbors got split. Compensate: the feature added 1 component when present.
     return after > before;
   }
 
@@ -385,15 +444,34 @@ export class DependencyGraph {
    */
   getBlastRadiusLevels(
     feature: string,
-    direction: "upstream" | "downstream"
+    direction: "upstream" | "downstream",
+    minConfidence?: number
   ): Map<number, string[]> {
     const levels = new Map<number, string[]>();
     const visited = new Set<string>();
     visited.add(feature);
 
-    const getNext = direction === "upstream"
-      ? (f: string) => this.getDependents(f)
-      : (f: string) => this.getDependencies(f);
+    const threshold = minConfidence ?? 0;
+
+    const getNext = (f: string): string[] => {
+      if (direction === "upstream") {
+        // Features whose edges point to f, filtered by confidence
+        const result: string[] = [];
+        for (const [candidate, edgeList] of this.edges) {
+          for (const e of edgeList) {
+            if (e.to === f && e.confidence >= threshold) {
+              result.push(candidate);
+              break;
+            }
+          }
+        }
+        return result;
+      } else {
+        return (this.edges.get(f) ?? [])
+          .filter((e) => e.confidence >= threshold)
+          .map((e) => e.to);
+      }
+    };
 
     let current = getNext(feature).filter((f) => !visited.has(f));
     let depth = 1;
@@ -418,7 +496,6 @@ export class DependencyGraph {
       current = next;
       depth++;
 
-      // Safety cap to prevent runaway graphs
       if (depth > 20) break;
     }
 

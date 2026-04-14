@@ -28,6 +28,7 @@ interface FullData {
   contracts: Contract[];
   violations: Map<string, ValidationResult>;
   structure: CommunityReport;
+  graph: DependencyGraph;
 }
 
 function buildDashboardData(
@@ -90,6 +91,7 @@ async function collectData(projectRoot: string): Promise<Result<FullData, Dashbo
   }
 
   const graph = DependencyGraph.fromContracts(contracts);
+  graph.enrichWithValidation(validations);
   const structure = graph.analyzeStructure();
 
   return {
@@ -99,13 +101,15 @@ async function collectData(projectRoot: string): Promise<Result<FullData, Dashbo
       contracts,
       violations: violationMap,
       structure,
+      graph,
     },
   };
 }
 
 function buildGraphData(
   contracts: Contract[],
-  structure: CommunityReport
+  structure: CommunityReport,
+  graph: DependencyGraph
 ): { nodes: GraphNode[]; edges: GraphEdge[] } {
   const communityByFeature = new Map(
     structure.classifications.map((c) => [c.feature, c.community])
@@ -128,16 +132,13 @@ function buildGraphData(
     };
   });
 
-  const edges: GraphEdge[] = [];
-  for (const c of contracts) {
-    for (const dep of c.dependencies.internal) {
-      edges.push({
-        from: c.contract.feature,
-        to: dep.feature,
-        reason: dep.reason,
-      });
-    }
-  }
+  const edges: GraphEdge[] = graph.getAllEdges().map((e) => ({
+    from: e.from,
+    to: e.to,
+    reason: e.reason,
+    confidence: e.confidence,
+    source: e.source,
+  }));
 
   return { nodes, edges };
 }
@@ -202,7 +203,7 @@ export async function startDashboard(
       if (url.pathname === "/api/graph") {
         const result = await collectData(projectRoot);
         if (!result.ok) return Response.json({ error: result.error.message }, { status: 500 });
-        return Response.json(buildGraphData(result.value.contracts, result.value.structure));
+        return Response.json(buildGraphData(result.value.contracts, result.value.structure, result.value.graph));
       }
 
       if (url.pathname === "/api/structure") {
@@ -217,7 +218,7 @@ export async function startDashboard(
         return new Response(`Error: ${result.error.message}`, { status: 500 });
       }
 
-      const { data, contracts, violations, structure } = result.value;
+      const { data, contracts, violations, structure, graph } = result.value;
 
       if (url.pathname === "/project") {
         const selectedFeature = url.searchParams.get("feature") ?? undefined;
@@ -227,7 +228,7 @@ export async function startDashboard(
       }
 
       if (url.pathname === "/graph") {
-        const graphData = buildGraphData(contracts, structure);
+        const graphData = buildGraphData(contracts, structure, graph);
         const content = renderGraph(graphData.nodes, graphData.edges);
         const html = renderLayout("graph", content);
         return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });

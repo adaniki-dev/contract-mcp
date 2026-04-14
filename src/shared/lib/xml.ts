@@ -248,7 +248,8 @@ export function formatBlastRadius(radius: BlastRadius): string {
       const features = level.features
         .map((f) => {
           const criticalAttr = f.critical ? ` critical="true"` : "";
-          return `<feature name="${escapeXml(f.feature)}" status="${f.status}" rules="${f.rulesCount}" deps="${f.dependenciesCount}"${criticalAttr} />`;
+          const confidenceAttr = f.edgeConfidence != null ? ` confidence="${f.edgeConfidence}"` : "";
+          return `<feature name="${escapeXml(f.feature)}" status="${f.status}" rules="${f.rulesCount}" deps="${f.dependenciesCount}"${criticalAttr}${confidenceAttr} />`;
         })
         .join("\n");
       return `<level depth="${level.depth}" count="${level.features.length}">\n${features}\n</level>`;

@@ -1,4 +1,5 @@
 import { compileAll } from "@features/compiler";
+import { validateAll } from "@features/validator";
 import { DependencyGraph } from "@entities/dependency-graph";
 import { xmlSuccess, xmlError, formatBlastRadius } from "@shared/lib/xml";
 import type {
@@ -26,15 +27,14 @@ function calculateRiskScore(
 ): number {
   let score = 0;
   for (const level of levels) {
-    // Closer levels weigh more (inverse of depth)
     const depthWeight = 1 / level.depth;
     for (const f of level.features) {
       const statusWeight = STATUS_WEIGHT[f.status] ?? 1;
+      const confidence = f.edgeConfidence ?? 1;
       const base = 1 + f.rulesCount * 0.5;
-      score += base * statusWeight * depthWeight;
+      score += base * statusWeight * depthWeight * confidence;
     }
   }
-  // Upstream (who depends on me) is more dangerous than downstream
   if (direction === "upstream") score *= 1.5;
   return Math.round(score * 10) / 10;
 }
@@ -77,6 +77,13 @@ export async function handleBlastRadius(args: {
     }
 
     const graph = DependencyGraph.fromContracts(contracts);
+
+    // Enrich with validation data for confidence scoring
+    const validateResult = await validateAll(process.cwd());
+    if (validateResult.ok) {
+      graph.enrichWithValidation(validateResult.value);
+    }
+
     const levelsMap = graph.getBlastRadiusLevels(args.feature, direction);
 
     const levels: BlastRadiusLevel[] = [];
@@ -87,12 +94,18 @@ export async function handleBlastRadius(args: {
       for (const featureName of features) {
         const c = contractMap.get(featureName);
         if (!c) continue;
+        // Get edge confidence: for upstream, the edge is featureName→args.feature
+        // For downstream, the edge is args.feature→featureName (at depth 1)
+        const edgeConfidence = direction === "upstream"
+          ? graph.getEdgeConfidence(featureName, args.feature)
+          : graph.getEdgeConfidence(args.feature, featureName);
         levelFeatures.push({
           feature: featureName,
           status: c.contract.status,
           rulesCount: c.rules.length,
           dependenciesCount: c.dependencies.internal.length,
           critical: isCritical(c),
+          edgeConfidence: edgeConfidence || undefined,
         });
       }
       if (levelFeatures.length > 0) {

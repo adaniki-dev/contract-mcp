@@ -13,6 +13,8 @@ export interface GraphEdge {
   from: string;
   to: string;
   reason: string;
+  confidence?: number;
+  source?: "declared" | "inferred";
 }
 
 export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
@@ -452,7 +454,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   simNodes.forEach(function (n) { nodeMap[n.id] = n; });
 
   const simEdges = raw.edges.map(function (e) {
-    return { from: e.from, to: e.to, reason: e.reason };
+    return { from: e.from, to: e.to, reason: e.reason, confidence: e.confidence, source: e.source };
   });
 
   // === Filter & view state ===
@@ -816,7 +818,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
     return null;
   }
 
-  function drawArrow(fromX, fromY, toX, toY, targetR, color, alpha) {
+  function drawArrow(fromX, fromY, toX, toY, targetR, color, alpha, dashed) {
     var dx = toX - fromX;
     var dy = toY - fromY;
     var dist = Math.sqrt(dx * dx + dy * dy);
@@ -830,11 +832,13 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
 
     ctx.globalAlpha = alpha;
     ctx.beginPath();
+    if (dashed) ctx.setLineDash([6, 4]);
     ctx.moveTo(fromX, fromY);
     ctx.lineTo(endX, endY);
     ctx.strokeStyle = color;
     ctx.lineWidth = 1.5;
     ctx.stroke();
+    if (dashed) ctx.setLineDash([]);
 
     var arrowLen = 8;
     ctx.beginPath();
@@ -908,7 +912,9 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
       var t = nodeMap[e.to];
       if (!s || !t) continue;
 
-      var edgeAlpha = 0.6;
+      var conf = e.confidence != null ? e.confidence : 1;
+      var edgeAlpha = conf < 0.5 ? 0.3 : 0.6;
+      var edgeDashed = conf < 0.8;
       var edgeColor = EDGE_COLOR;
       if (highlightSet) {
         if (highlightSet[e.from] && highlightSet[e.to]) {
@@ -923,7 +929,7 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
         edgeAlpha = 1;
       }
 
-      drawArrow(s.x, s.y, t.x, t.y, t.r, edgeColor, edgeAlpha);
+      drawArrow(s.x, s.y, t.x, t.y, t.r, edgeColor, edgeAlpha, edgeDashed);
     }
 
     for (var j = 0; j < simNodes.length; j++) {
@@ -1125,7 +1131,9 @@ export function renderGraph(nodes: GraphNode[], edges: GraphEdge[]): string {
   }
 
   function showEdgeTooltip(e, mx, my) {
-    tooltip.innerHTML = '<div class="tt-edge-reason">' + e.from + ' &rarr; ' + e.to + '<br>' + e.reason + '</div>';
+    var confLabel = e.confidence != null ? ' <span style="opacity:0.7">(confidence: ' + e.confidence + ')</span>' : '';
+    var sourceLabel = e.source === 'inferred' ? ' <span style="color:#f59f00">[inferred]</span>' : '';
+    tooltip.innerHTML = '<div class="tt-edge-reason">' + e.from + ' &rarr; ' + e.to + sourceLabel + confLabel + '<br>' + e.reason + '</div>';
     positionTooltip(mx, my);
     tooltip.classList.add("visible");
   }
