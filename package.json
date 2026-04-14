@@ -1,6 +1,6 @@
 {
   "name": "@adaniki/contract-agent-linter",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "MCP server that acts as a contract linter for AI agents. Understand projects through structured YAML contracts instead of reading raw files.",
   "type": "module",
   "main": "dist/server.js",
