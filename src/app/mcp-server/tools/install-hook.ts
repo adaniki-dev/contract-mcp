@@ -1,6 +1,5 @@
 import { xmlSuccess, xmlError, escapeXml } from "@shared/lib/xml";
 import { join } from "path";
-import { fileURLToPath } from "url";
 
 export async function handleInstallHook(args: {
   projectRoot?: string;
@@ -30,18 +29,10 @@ export async function handleInstallHook(args: {
       );
     }
 
-    // Resolve the CLI path relative to this file
-    // import.meta.url → .../src/app/mcp-server/tools/install-hook.ts
-    // CLI is at      → .../src/app/cli/check-commit.ts
-    const thisFile = fileURLToPath(import.meta.url);
-    const cliPath = join(thisFile, "..", "..", "..", "cli", "check-commit.ts");
-    // Normalize
-    const resolvedCli = new URL("../../cli/check-commit.ts", import.meta.url).pathname;
-
     const hookContent = `#!/bin/sh
 # contract-mcp pre-commit hook
 # Installed by contract-mcp install_hook tool
-bun run ${resolvedCli} || exit 1
+bunx @adaniki/contract-agent-linter-check || exit 1
 `;
 
     await Bun.write(hookPath, hookContent);
@@ -49,7 +40,7 @@ bun run ${resolvedCli} || exit 1
 
     return xmlSuccess(
       "install_hook",
-      `<install path="${escapeXml(hookPath)}" cli="${escapeXml(resolvedCli)}" />`
+      `<install path="${escapeXml(hookPath)}" command="bunx @adaniki/contract-agent-linter-check" />`
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
