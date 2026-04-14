@@ -127,6 +127,14 @@ exports:
       description: "Resultado de extractSignatures: mapa nome→signature + re-exports"
     - name: ReExportInfo
       description: "Info de re-export: nome + source module"
+    - name: BM25Index
+      description: "Motor de busca BM25 com field weights e ranking por relevância"
+    - name: BM25Document
+      description: "Documento indexável com id e campos texto"
+    - name: BM25Result
+      description: "Resultado de busca com id, score e termos matchados"
+    - name: BM25Options
+      description: "Opções do BM25: k1, b, fieldWeights"
 
 rules:
   - id: no-business-logic
@@ -148,10 +156,14 @@ rules:
 
 files:
   - path: src/shared/lib/index.ts
-    purpose: "Barrel export consolidando yaml, xml e parsers"
+    purpose: "Barrel export consolidando yaml, xml, parsers e bm25"
   - path: src/shared/lib/yaml.ts
     purpose: "Wrappers do yaml npm com tratamento de erros via Result"
   - path: src/shared/lib/xml.ts
     purpose: "Builders XML e formatters contract-aware otimizados para AI"
   - path: src/shared/lib/parsers.ts
     purpose: "Wrappers oxc-parser e es-module-lexer com extração de signatures"
+  - path: src/shared/lib/bm25.ts
+    purpose: "Motor BM25 search ranking com field weights e índice invertido"
+  - path: src/shared/lib/bm25.test.ts
+    purpose: "Testes do BM25: tokenização, IDF, ranking, field weights"

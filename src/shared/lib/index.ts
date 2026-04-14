@@ -16,6 +16,7 @@ export {
   formatCheckCommitResult,
   formatCommunityReport,
 } from "./xml";
+export { BM25Index, tokenize, type BM25Document, type BM25Result, type BM25Options } from "./bm25";
 export {
   initParsers,
   parseTypeScript,
