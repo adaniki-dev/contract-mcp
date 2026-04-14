@@ -32,7 +32,7 @@ export async function handleInstallHook(args: {
     const hookContent = `#!/bin/sh
 # contract-mcp pre-commit hook
 # Installed by contract-mcp install_hook tool
-bunx @adaniki/contract-agent-linter-check || exit 1
+bunx -p @adaniki/contract-agent-linter contract-agent-linter-check || exit 1
 `;
 
     await Bun.write(hookPath, hookContent);
